@@ -1,0 +1,72 @@
+# NL2Cube 智慧分析系統 - 核心依賴套件
+
+# Web 框架
+Flask>=3.0.0
+Flask-CORS>=6.0.0
+Flask-SQLAlchemy>=3.0.0
+
+# 資料庫
+SQLAlchemy>=2.0.0
+qdrant_client>=1.10.0
+
+# 數據處理
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+
+# 圖表生成
+matplotlib>=3.7.0
+plotly>=5.0.0
+
+# AI 和機器學習
+scikit-learn>=1.3.0
+statsmodels>=0.14.0
+
+# CrewAI 預測系統
+crewai>=0.11.0
+langchain>=0.1.0
+openai>=1.0.0
+
+# Google Gemini 支援
+google-generativeai>=0.3.0
+
+# 向量資料庫
+chromadb>=0.4.0
+sentence-transformers>=2.0.0
+transformers>=4.30.0
+
+# 自然語言處理
+nltk>=3.8.0
+textblob>=0.17.0
+
+# 語音合成 (TTS)
+gTTS>=2.3.0
+pyttsx3>=2.90
+
+# 排程管理
+APScheduler>=3.10.0
+schedule>=1.2.0
+
+# 工作流程自動化
+requests>=2.31.0
+aiohttp>=3.8.0
+
+# 監控和日誌
+loguru>=0.7.0
+
+# 安全性
+PyJWT>=2.8.0
+cryptography>=40.0.0
+
+# 測試
+pytest>=7.0.0
+
+# 開發工具
+python-dotenv>=1.0.0
+click>=8.0.0
+tqdm>=4.60.0
+
+# 其他工具
+python-dateutil>=2.8.0
+pytz>=2023.0
+gunicorn

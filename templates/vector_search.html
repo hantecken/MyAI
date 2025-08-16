@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>向量搜尋測試系統</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        
+        .search-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        
+        .search-section h2 {
+            color: #007bff;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        
+        input[type="text"], input[type="number"], select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+        }
+        
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            min-height: 100px;
+        }
+        
+        .result-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            background-color: #f8f9fa;
+        }
+        
+        .score {
+            font-weight: bold;
+            color: #28a745;
+        }
+        
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .status-section {
+            background-color: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        
+        .status-item {
+            margin-bottom: 5px;
+        }
+        
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .ai-analysis-toggle {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #e8f4fd;
+            border-radius: 4px;
+            border: 1px solid #bee5eb;
+        }
+        
+        .ai-analysis-toggle label {
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: normal;
+        }
+        
+        .ai-analysis-toggle input[type="checkbox"] {
+            margin-right: 8px;
+            width: auto;
+        }
+        
+        .ai-analysis-result {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #28a745;
+            border-radius: 4px;
+        }
+        
+        .ai-analysis-result h4 {
+            color: #28a745;
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+        
+        .ai-analysis-result p {
+            margin: 0;
+            line-height: 1.6;
+            color: #555;
+        }
+        
+        .ai-loading {
+            color: #007bff;
+            font-style: italic;
+        }
+        
+        .ai-error {
+            color: #dc3545;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 向量搜尋測試系統</h1>
+        
+        <!-- 向量資料庫狀態 -->
+        <div class="status-section">
+            <h2>📊 向量資料庫狀態</h2>
+            <button onclick="checkStatus()">檢查狀態</button>
+            <button onclick="refreshDatabase()">重新整理資料庫</button>
+            <div id="status-results" class="results"></div>
+        </div>
+        
+        <div class="two-column">
+            <!-- 產品搜尋 -->
+            <div class="search-section">
+                <h2>🛍️ 產品相似性搜尋</h2>
+                <div class="form-group">
+                    <label for="product-query">搜尋關鍵字:</label>
+                    <input type="text" id="product-query" placeholder="例如: 筆記型電腦, 藍牙耳機, A品牌">
+                </div>
+                <div class="form-group">
+                    <label for="product-limit">結果數量:</label>
+                    <input type="number" id="product-limit" value="5" min="1" max="20">
+                </div>
+                <div class="ai-analysis-toggle">
+                    <label>
+                        <input type="checkbox" id="product-ai-analysis" checked>
+                        🤖 啟用 AI 智能分析
+                    </label>
+                </div>
+                <button onclick="searchProducts()">搜尋產品</button>
+                <div id="product-results" class="results"></div>
+                <div id="product-ai-analysis-result"></div>
+            </div>
+            
+            <!-- 客戶搜尋 -->
+            <div class="search-section">
+                <h2>👥 客戶相似性搜尋</h2>
+                <div class="form-group">
+                    <label for="product-query">搜尋關鍵字:</label>
+                    <input type="text" id="customer-query" placeholder="例如: 金級, 女性, 台塑">
+                </div>
+                <div class="form-group">
+                    <label for="customer-limit">結果數量:</label>
+                    <input type="number" id="customer-limit" value="5" min="1" max="20">
+                </div>
+                <div class="ai-analysis-toggle">
+                    <label>
+                        <input type="checkbox" id="customer-ai-analysis" checked>
+                        🤖 啟用 AI 智能分析
+                    </label>
+                </div>
+                <button onclick="searchCustomers()">搜尋客戶</button>
+                <div id="customer-results" class="results"></div>
+                <div id="customer-ai-analysis-result"></div>
+            </div>
+        </div>
+        
+        <div class="two-column">
+            <!-- 銷售事件搜尋 -->
+            <div class="search-section">
+                <h2>💰 銷售事件相似性搜尋</h2>
+                <div class="form-group">
+                    <label for="sales-quantity">數量:</label>
+                    <input type="number" id="sales-quantity" placeholder="例如: 5" step="1">
+                </div>
+                <div class="form-group">
+                    <label for="sales-amount">金額:</label>
+                    <input type="number" id="sales-amount" placeholder="例如: 150000" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="sales-limit">結果數量:</label>
+                    <input type="number" id="sales-limit" value="5" min="1" max="20">
+                </div>
+                <button onclick="searchSales()">搜尋銷售事件</button>
+                <div id="sales-results" class="results"></div>
+            </div>
+            
+            <!-- 產品推薦 -->
+            <div class="search-section">
+                <h2>🎯 產品推薦</h2>
+                <div class="form-group">
+                    <label for="recommend-customer-id">客戶ID:</label>
+                    <input type="number" id="recommend-customer-id" placeholder="例如: 1" min="1">
+                </div>
+                <div class="form-group">
+                    <label for="recommend-limit">推薦數量:</label>
+                    <input type="number" id="recommend-limit" value="3" min="1" max="10">
+                </div>
+                <button onclick="recommendProducts()">獲取推薦</button>
+                <div id="recommend-results" class="results"></div>
+            </div>
+        </div>
+        
+        <!-- 異常檢測 -->
+        <div class="search-section">
+            <h2>⚠️ 銷售異常檢測</h2>
+            <div class="form-group">
+                <label for="anomaly-threshold">異常閾值 (0-1):</label>
+                <input type="number" id="anomaly-threshold" value="0.3" min="0" max="1" step="0.1">
+            </div>
+            <div class="form-group">
+                <label for="anomaly-limit">結果數量:</label>
+                <input type="number" id="anomaly-limit" value="10" min="1" max="50">
+            </div>
+            <button onclick="detectAnomalies()">檢測異常</button>
+            <div id="anomaly-results" class="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // 檢查向量資料庫狀態
+        function checkStatus() {
+            const resultsDiv = document.getElementById('status-results');
+            resultsDiv.innerHTML = '<div class="loading">正在檢查狀態...</div>';
+            
+            fetch('/api/vector/status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        let html = '<div class="success">向量資料庫狀態正常</div>';
+                        
+                        for (const [collectionName, info] of Object.entries(data.status.collections)) {
+                            html += `
+                                <div class="status-item">
+                                    <strong>${collectionName}:</strong> 
+                                    ${info.points_count} 個向量點, 
+                                    向量維度: ${info.config.vector_size}
+                                </div>
+                            `;
+                        }
+                        
+                        resultsDiv.innerHTML = html;
+                    } else {
+                        resultsDiv.innerHTML = `<div class="error">錯誤: ${data.error}</div>`;
+                    }
+                })
+                .catch(error => {
+                    resultsDiv.innerHTML = `<div class="error">請求失敗: ${error.message}</div>`;
+                });
+        }
+        
+        // 重新整理向量資料庫
+        function refreshDatabase() {
+            const resultsDiv = document.getElementById('status-results');
+            resultsDiv.innerHTML = '<div class="loading">正在重新整理資料庫...</div>';
+            
+            fetch('/api/vector/refresh', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        resultsDiv.innerHTML = `<div class="success">${data.message}</div>`;
+                        // 自動檢查狀態
+                        setTimeout(checkStatus, 1000);
+                    } else {
+                        resultsDiv.innerHTML = `<div class="error">錯誤: ${data.error}</div>`;
+                    }
+                })
+                .catch(error => {
+                    resultsDiv.innerHTML = `<div class="error">請求失敗: ${error.message}</div>`;
+                });
+        }
+        
+        // 搜尋產品
+        function searchProducts() {
+            const query = document.getElementById('product-query').value;
+            const limit = parseInt(document.getElementById('product-limit').value);
+            const includeAnalysis = document.getElementById('product-ai-analysis').checked;
+            const resultsDiv = document.getElementById('product-results');
+            const aiResultDiv = document.getElementById('product-ai-analysis-result');
+            
+            if (!query.trim()) {
+                resultsDiv.innerHTML = '<div class="error">請輸入搜尋關鍵字</div>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<div class="loading">正在搜尋產品...</div>';
+            if (includeAnalysis) {
+                aiResultDiv.innerHTML = '<div class="ai-loading">🤖 AI 正在分析搜尋結果...</div>';
+            }
+            
+            fetch('/api/vector/search/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, limit, include_analysis: includeAnalysis })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.results && Array.isArray(data.results)) {
+                        if (data.results.length > 0) {
+                            let html = `<div class="success">找到 ${data.count || data.results.length} 個相似產品</div>`;
+                            data.results.forEach(product => {
+                                html += `
+                                    <div class="result-item">
+                                        <div><strong>${product.product_name || 'N/A'}</strong></div>
+                                        <div>類別: ${product.category || 'N/A'} | 品牌: ${product.brand || 'N/A'}</div>
+                                        <div>總銷售額: $${(product.total_sales || 0).toLocaleString()} | 總銷量: ${product.total_quantity || 0}</div>
+                                        <div class="score">相似度: ${((product.score || 0) * 100).toFixed(2)}%</div>
+                                    </div>
+                                `;
+                            });
+                            resultsDiv.innerHTML = html;
+                            
+                            // 顯示 AI 分析結果
+                            if (includeAnalysis && data.ai_analysis && data.ai_analysis.success) {
+                                aiResultDiv.innerHTML = `
+                                    <div class="ai-analysis-result">
+                                        <h4>🤖 AI 智能分析</h4>
+                                        <p>${data.ai_analysis.analysis}</p>
+                                    </div>
+                                `;
+                            } else if (includeAnalysis && data.ai_analysis && !data.ai_analysis.success) {
+                                aiResultDiv.innerHTML = `<div class="ai-error">❌ AI 分析失敗: ${data.ai_analysis.error}</div>`;
+                            } else if (includeAnalysis) {
+                                aiResultDiv.innerHTML = '<div class="ai-error">❌ 未收到 AI 分析結果</div>';
+                            }
+                        } else {
+                            resultsDiv.innerHTML = '<div class="error">未找到相似產品</div>';
+                            if (includeAnalysis) {
+                                aiResultDiv.innerHTML = '';
+                            }
+                        }
+                    } else {
+                        resultsDiv.innerHTML = `<div class="error">錯誤: ${data.error || '數據格式錯誤'}</div>`;
+                        if (includeAnalysis) {
+                            aiResultDiv.innerHTML = '';
+                        }
+                    }
+                })
+                .catch(error => {
+                    resultsDiv.innerHTML = `<div class="error">請求失敗: ${error.message}</div>`;
+                    if (includeAnalysis) {
+                        aiResultDiv.innerHTML = '';
+                    }
+                });
+        }
+        
+        // 搜尋客戶
+        function searchCustomers() {
+            const query = document.getElementById('customer-query').value;
+            const limit = parseInt(document.getElementById('customer-limit').value);
+            const includeAnalysis = document.getElementById('customer-ai-analysis').checked;
+            const resultsDiv = document.getElementById('customer-results');
+            const aiResultDiv = document.getElementById('customer-ai-analysis-result');
+            
+            if (!query.trim()) {
+                resultsDiv.innerHTML = '<div class="error">請輸入搜尋關鍵字</div>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<div class="loading">正在搜尋客戶...</div>';
+            if (includeAnalysis) {
+                aiResultDiv.innerHTML = '<div class="ai-loading">🤖 AI 正在分析搜尋結果...</div>';
+            }
+            
+            fetch('/api/vector/search/customers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, limit, include_analysis: includeAnalysis })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.results && Array.isArray(data.results)) {
+                        if (data.results.length > 0) {
+                            let html = `<div class="success">找到 ${data.count || data.results.length} 個相似客戶</div>`;
+                            data.results.forEach(customer => {
+                                html += `
+                                    <div class="result-item">
+                                        <div><strong>${customer.customer_name || 'N/A'}</strong></div>
+                                        <div>性別: ${customer.gender || 'N/A'} | 年齡: ${customer.age || 'N/A'} | 忠誠度: ${customer.loyalty_level || 'N/A'}</div>
+                                        <div>總消費: $${(customer.total_purchases || 0).toLocaleString()} | 購買次數: ${customer.purchase_count || 0}</div>
+                                        <div class="score">相似度: ${((customer.score || 0) * 100).toFixed(2)}%</div>
+                                    </div>
+                                `;
+                            });
+                            resultsDiv.innerHTML = html;
+                            
+                            // 顯示 AI 分析結果
+                            if (includeAnalysis && data.ai_analysis && data.ai_analysis.success) {
+                                aiResultDiv.innerHTML = `
+                                    <div class="ai-analysis-result">
+                                        <h4>🤖 AI 智能分析</h4>
+                                        <p>${data.ai_analysis.analysis}</p>
+                                    </div>
+                                `;
+                            } else if (includeAnalysis && data.ai_analysis && !data.ai_analysis.success) {
+                                aiResultDiv.innerHTML = `<div class="ai-error">❌ AI 分析失敗: ${data.ai_analysis.error}</div>`;
+                            } else if (includeAnalysis) {
+                                aiResultDiv.innerHTML = '<div class="ai-error">❌ 未收到 AI 分析結果</div>';
+                            }
+                        } else {
+                            resultsDiv.innerHTML = '<div class="error">未找到相似客戶</div>';
+                            if (includeAnalysis) {
+                                aiResultDiv.innerHTML = '';
+                            }
+                        }
+                    } else {
+                        resultsDiv.innerHTML = `<div class="error">錯誤: ${data.error || '數據格式錯誤'}</div>`;
+                        if (includeAnalysis) {
+                            aiResultDiv.innerHTML = '';
+                        }
+                    }
+                })
+                .catch(error => {
+                    resultsDiv.innerHTML = `<div class="error">請求失敗: ${error.message}</div>`;
+                    if (includeAnalysis) {
+                        aiResultDiv.innerHTML = '';
+                    }
+                });
+        }
+        
+        // 搜尋銷售事件
+        function searchSales() {
+            const quantity = parseFloat(document.getElementById('sales-quantity').value);
+            const amount = parseFloat(document.getElementById('sales-amount').value);
+            const limit = parseInt(document.getElementById('sales-limit').value);
+            const resultsDiv = document.getElementById('sales-results');
+            
+            if (isNaN(quantity) || isNaN(amount)) {
+                resultsDiv.innerHTML = '<div class="error">請輸入有效的數量和金額</div>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<div class="loading">正在搜尋銷售事件...</div>';
+            
+            fetch('/api/vector/search/sales', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ quantity, amount, limit })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.results && Array.isArray(data.results)) {
+                        if (data.results.length > 0) {
+                            let html = `<div class="success">找到 ${data.count || data.results.length} 個相似銷售事件</div>`;
+                            data.results.forEach(sale => {
+                                html += `
+                                    <div class="result-item">
+                                        <div><strong>銷售ID: ${sale.sale_id || 'N/A'}</strong></div>
+                                        <div>產品: ${sale.product_name || 'N/A'} | 客戶: ${sale.customer_name || 'N/A'}</div>
+                                        <div>數量: ${sale.quantity || 0} | 金額: $${(sale.amount || 0).toLocaleString()}</div>
+                                        <div>日期: ${sale.date || 'N/A'}</div>
+                                        <div class="score">相似度: ${((sale.score || 0) * 100).toFixed(2)}%</div>
+                                    </div>
+                                `;
+                            });
+                            resultsDiv.innerHTML = html;
+                        } else {
+                            resultsDiv.innerHTML = '<div class="error">未找到相似銷售事件</div>';
+                        }
+                    } else {
+                        resultsDiv.innerHTML = `<div class="error">錯誤: ${data.error || '數據格式錯誤'}</div>`;
+                    }
+                })
+                .catch(error => {
+                    resultsDiv.innerHTML = `<div class="error">請求失敗: ${error.message}</div>`;
+                });
+        }
+        
+        // 產品推薦
+        function recommendProducts() {
+            const customerId = parseInt(document.getElementById('recommend-customer-id').value);
+            const limit = parseInt(document.getElementById('recommend-limit').value);
+            const resultsDiv = document.getElementById('recommend-results');
+            
+            if (isNaN(customerId)) {
+                resultsDiv.innerHTML = '<div class="error">請輸入有效的客戶ID</div>';
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<div class="loading">正在生成推薦...</div>';
+            
+            fetch('/api/vector/recommend/products', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customer_id: customerId, limit })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.recommendations && Array.isArray(data.recommendations)) {
+                        if (data.recommendations.length > 0) {
+                            let html = `<div class="success">為客戶 ${data.customer_name || 'N/A'} 推薦 ${data.count || data.recommendations.length} 個產品</div>`;
+                            data.recommendations.forEach(product => {
+                                html += `
+                                    <div class="result-item">
+                                        <div><strong>${product.product_name || 'N/A'}</strong></div>
+                                        <div>類別: ${product.category || 'N/A'} | 品牌: ${product.brand || 'N/A'}</div>
+                                        <div>總銷售額: $${(product.total_sales || 0).toLocaleString()}</div>
+                                        <div class="score">推薦度: ${((product.score || 0) * 100).toFixed(2)}%</div>
+                                    </div>
+                                `;
+                            });
+                            resultsDiv.innerHTML = html;
+                        } else {
+                            resultsDiv.innerHTML = '<div class="error">暫無推薦產品</div>';
+                        }
+                    } else {
+                        resultsDiv.innerHTML = `<div class="error">錯誤: ${data.error || '數據格式錯誤'}</div>`;
+                    }
+                })
+                .catch(error => {
+                    resultsDiv.innerHTML = `<div class="error">請求失敗: ${error.message}</div>`;
+                });
+        }
+        
+        // 異常檢測
+        function detectAnomalies() {
+            const threshold = parseFloat(document.getElementById('anomaly-threshold').value);
+            const limit = parseInt(document.getElementById('anomaly-limit').value);
+            const resultsDiv = document.getElementById('anomaly-results');
+            
+            resultsDiv.innerHTML = '<div class="loading">正在檢測異常...</div>';
+            
+            fetch('/api/vector/detect/anomalies', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ threshold, limit })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.anomalies && Array.isArray(data.anomalies)) {
+                        if (data.anomalies.length > 0) {
+                            let html = `<div class="success">檢測到 ${data.count || data.anomalies.length} 個異常銷售事件</div>`;
+                            data.anomalies.forEach(anomaly => {
+                                html += `
+                                    <div class="result-item">
+                                        <div><strong>異常銷售ID: ${anomaly.sale_id || 'N/A'}</strong></div>
+                                        <div>產品: ${anomaly.product_name || 'N/A'} | 客戶: ${anomaly.customer_name || 'N/A'}</div>
+                                        <div>數量: ${anomaly.quantity || 0} | 金額: $${(anomaly.amount || 0).toLocaleString()}</div>
+                                        <div>日期: ${anomaly.date || 'N/A'} | 原因: ${anomaly.reason || 'N/A'}</div>
+                                        <div class="score">異常分數: ${((anomaly.anomaly_score || 0) * 100).toFixed(2)}%</div>
+                                    </div>
+                                `;
+                            });
+                            resultsDiv.innerHTML = html;
+                        } else {
+                            resultsDiv.innerHTML = '<div class="success">未檢測到異常銷售事件</div>';
+                        }
+                    } else {
+                        resultsDiv.innerHTML = `<div class="error">錯誤: ${data.error || '數據格式錯誤'}</div>`;
+                    }
+                })
+                .catch(error => {
+                    resultsDiv.innerHTML = `<div class="error">請求失敗: ${error.message}</div>`;
+                });
+        }
+        
+        // 頁面載入時自動檢查狀態
+        window.onload = function() {
+            checkStatus();
+        };
+    </script>
+</body>
+</html>
+
