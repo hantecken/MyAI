@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>統一預測圖表 - 簡化測試版</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .test-button {
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- 頁面標題 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h1 class="mb-2">
+                            <i class="fas fa-chart-line me-3"></i>
+                            統一預測圖表 - 簡化測試版
+                        </h1>
+                        <p class="mb-0 fs-5">用於診斷圖表顯示問題</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 測試控制面板 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="fas fa-tools me-2"></i>
+                            功能測試面板
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <button onclick="testBasicFunction()" class="btn btn-primary test-button w-100">
+                                    <i class="fas fa-check me-2"></i>
+                                    基本功能測試
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button onclick="testChartJS()" class="btn btn-success test-button w-100">
+                                    <i class="fas fa-chart-bar me-2"></i>
+                                    Chart.js 測試
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button onclick="testAPI()" class="btn btn-info test-button w-100">
+                                    <i class="fas fa-plug me-2"></i>
+                                    API 連接測試
+                                </button>
+                            </div>
+                            <div class="col-md-3">
+                                <button onclick="clearResults()" class="btn btn-secondary test-button w-100">
+                                    <i class="fas fa-trash me-2"></i>
+                                    清除結果
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 測試結果區域 -->
+        <div id="testResults" class="mb-4"></div>
+        
+        <!-- 圖表顯示區域 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-area me-2"></i>
+                            圖表測試區域
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container" id="chartContainer">
+                            <div class="text-center">
+                                <i class="fas fa-chart-line fa-3x mb-3 text-muted"></i>
+                                <h5 class="text-muted">點擊上方按鈕進行測試</h5>
+                                <p class="text-muted">這裡將顯示測試結果和圖表</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 測試結果顯示函數
+        function showResult(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults');
+            const alertClass = `alert alert-${type}`;
+            const icon = type === 'success' ? 'check-circle' : 
+                        type === 'danger' ? 'exclamation-triangle' : 
+                        type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+            
+            const html = `
+                <div class="${alertClass} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-${icon} me-2"></i>
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            resultsDiv.innerHTML = html + resultsDiv.innerHTML;
+        }
+
+        // 基本功能測試
+        function testBasicFunction() {
+            showResult('✅ 基本 JavaScript 功能正常運作', 'success');
+            
+            // 測試 DOM 操作
+            const chartContainer = document.getElementById('chartContainer');
+            if (chartContainer) {
+                chartContainer.innerHTML = `
+                    <div class="text-center">
+                        <i class="fas fa-check-circle fa-3x mb-3 text-success"></i>
+                        <h5 class="text-success">基本功能測試通過</h5>
+                        <p class="text-muted">DOM 操作、事件處理、函數調用都正常</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Chart.js 測試
+        function testChartJS() {
+            // 檢查 Chart.js 是否載入
+            if (typeof Chart === 'undefined') {
+                showResult('❌ Chart.js 未載入，請檢查網路連接或 CDN 狀態', 'danger');
+                return;
+            }
+            
+            showResult('✅ Chart.js 已成功載入', 'success');
+            
+            // 創建簡單的測試圖表
+            const chartContainer = document.getElementById('chartContainer');
+            chartContainer.innerHTML = '<canvas id="testChart" width="400" height="200"></canvas>';
+            
+            try {
+                const ctx = document.getElementById('testChart').getContext('2d');
+                const testChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['1月', '2月', '3月', '4月', '5月'],
+                        datasets: [{
+                            label: '測試數據',
+                            data: [12, 19, 3, 5, 2],
+                            borderColor: 'rgb(75, 192, 192)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+                
+                showResult('✅ Chart.js 圖表創建成功', 'success');
+            } catch (error) {
+                showResult(`❌ Chart.js 圖表創建失敗: ${error.message}`, 'danger');
+            }
+        }
+
+        // API 連接測試
+        async function testAPI() {
+            showResult('🔄 正在測試 API 連接...', 'info');
+            
+            try {
+                // 測試 OPTIONS 請求
+                const response = await fetch('/api/unified-forecast', {
+                    method: 'OPTIONS'
+                });
+                
+                if (response.ok) {
+                    showResult('✅ API 端點可訪問', 'success');
+                } else {
+                    showResult(`⚠️ API 端點響應異常: HTTP ${response.status}`, 'warning');
+                }
+                
+                // 測試 GET 請求到主頁
+                const homeResponse = await fetch('/');
+                if (homeResponse.ok) {
+                    showResult('✅ 主頁訪問正常', 'success');
+                } else {
+                    showResult(`⚠️ 主頁訪問異常: HTTP ${homeResponse.status}`, 'warning');
+                }
+                
+            } catch (error) {
+                showResult(`❌ API 測試失敗: ${error.message}`, 'danger');
+            }
+        }
+
+        // 清除結果
+        function clearResults() {
+            document.getElementById('testResults').innerHTML = '';
+            const chartContainer = document.getElementById('chartContainer');
+            chartContainer.innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-chart-line fa-3x mb-3 text-muted"></i>
+                    <h5 class="text-muted">點擊上方按鈕進行測試</h5>
+                    <p class="text-muted">這裡將顯示測試結果和圖表</p>
+                </div>
+            `;
+        }
+
+        // 頁面載入完成後的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            showResult('✅ 頁面載入完成，開始進行功能測試', 'info');
+            console.log('簡化測試頁面載入完成');
+        });
+    </script>
+</body>
+</html>

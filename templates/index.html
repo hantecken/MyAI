@@ -1063,11 +1063,11 @@
                                     </small>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <button class="btn btn-warning btn-lg w-100" type="button" onclick="window.open('/unified-forecast-test', '_blank')">
+                                    <button class="btn btn-warning btn-lg w-100" type="button" onclick="window.open('/unified-forecast', '_blank')">
                                         <i class="fas fa-chart-line"></i> 📈 業績預測
                                     </button>
                                     <small class="text-muted d-block mt-2">
-                                        <i class="fas fa-lightbulb"></i> 跳轉到統一預測測試頁面
+                                        <i class="fas fa-lightbulb"></i> 跳轉到統一業績預測系統
                                     </small>
                                 </div>
                             </div>
@@ -1698,7 +1698,7 @@
                                 </div>
                                 <h4 class="card-title">立即執行預測</h4>
                                 <p class="card-text">立即執行銷售預測分析，獲取最新的預測結果和圖表。</p>
-                                <button class="btn btn-warning btn-lg" onclick="window.open('/unified-forecast-test', '_blank')">
+                                <button class="btn btn-warning btn-lg" onclick="window.open('/unified-forecast', '_blank')">
                                     <i class="fas fa-play"></i> 立即執行
                                 </button>
                             </div>
@@ -4201,11 +4201,10 @@
             }
         }
 
-        // 生成預測圖表
+        // 生成專業漂亮的預測圖表
         function generateForecastChart(result) {
             try {
-                console.log('開始生成預測圖表...');
-                console.log('Chart.js 狀態:', typeof Chart);
+                console.log('開始生成專業預測圖表...');
                 
                 // 檢查Chart.js是否可用
                 if (typeof Chart === 'undefined') {
@@ -4219,163 +4218,391 @@
                     return;
                 }
                 
-                console.log('Canvas 元素找到:', canvas);
-                
                 const ctx = canvas.getContext('2d');
                 if (!ctx) {
                     console.error('無法獲取canvas上下文');
                     return;
                 }
                 
-                console.log('Canvas 上下文獲取成功');
-                
                 // 銷毀現有圖表
                 if (window.forecastChart && typeof window.forecastChart.destroy === 'function') {
-                    console.log('銷毀現有圖表');
                     window.forecastChart.destroy();
                 }
                 
-                console.log('準備數據...');
+                // 準備歷史數據
+                const historicalLabels = [];
+                const historicalData = [];
+                if (result.historical_data && result.historical_data.length > 0) {
+                    result.historical_data.forEach(item => {
+                        historicalLabels.push(item.period);
+                        historicalData.push(item.sales);
+                    });
+                }
                 
-                            // 準備歷史數據
-            const historicalLabels = [];
-            const historicalData = [];
-            if (result.historical_data && result.historical_data.length > 0) {
-                result.historical_data.forEach(item => {
-                    historicalLabels.push(item.period);
-                    historicalData.push(item.sales);
-                });
-            }
-            
-            // 準備預測數據
-            const forecastLabels = [];
-            const forecastData = [];
-            if (result.forecast_data && result.forecast_data.length > 0) {
-                result.forecast_data.forEach(item => {
-                    forecastLabels.push(item.period);
-                    forecastData.push(item.forecast_sales);
-                });
-            }
-            
-            // 合併標籤並確保連續性
-            const allLabels = [...historicalLabels, ...forecastLabels];
-            
-            console.log('歷史數據:', historicalData);
-            console.log('預測數據:', forecastData);
-            console.log('所有標籤:', allLabels);
-            
-            // 創建數據集
-            const datasets = [];
-            
-            // 添加歷史數據集（黑色）
-            if (historicalData.length > 0) {
-                datasets.push({
-                    label: '歷史數據',
-                    data: [...historicalData, ...Array(forecastData.length).fill(null)],
-                    borderColor: '#000000',
-                    backgroundColor: 'rgba(0, 0, 0, 0.1)',
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.1,
-                    spanGaps: false, // 不跨越空值
-                    pointRadius: 3, // 顯示數據點
-                    pointHoverRadius: 5
-                });
-            }
-            
-            // 添加預測數據集（綠色）
-            if (forecastData.length > 0) {
-                datasets.push({
-                    label: '預測數據',
-                    data: [...Array(historicalData.length).fill(null), ...forecastData],
-                    borderColor: '#28a745', // 改為綠色
-                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                    borderWidth: 2, // 與歷史數據相同的線條寬度
-                    fill: false,
-                    tension: 0.1,
-                    borderDash: [8, 4], // 調整虛線樣式
-                    spanGaps: false, // 不跨越空值
-                    pointRadius: 3, // 與歷史數據相同的點大小
-                    pointHoverRadius: 5
-                });
-            }
-            
-            // 添加連續線數據集（確保歷史和預測之間連續）
-            if (historicalData.length > 0 && forecastData.length > 0) {
-                // 創建一個包含所有數據的連續線
-                const continuousData = [...historicalData, ...forecastData];
+                // 準備預測數據
+                const forecastLabels = [];
+                const forecastData = [];
+                if (result.forecast_data && result.forecast_data.length > 0) {
+                    result.forecast_data.forEach(item => {
+                        forecastLabels.push(item.period);
+                        forecastData.push(item.forecast_sales);
+                    });
+                }
                 
-                datasets.push({
-                    label: '',  // 移除標籤
-                    data: continuousData,
-                    borderColor: '#28a745',
-                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
-                    borderWidth: 1,
-                    fill: false,
-                    tension: 0.1,
-                    borderDash: [2, 2],
-                    spanGaps: true, // 跨越空值以連接線條
-                    pointRadius: 0, // 不顯示點
-                    pointHoverRadius: 0,
-                    showLine: true, // 顯示線條
-                    hidden: false  // 顯示線條
-                });
-            }
-            
-
-            
-            // 創建圖表
-            window.forecastChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: allLabels,
-                    datasets: datasets
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: `${result.period_text}銷售預測趨勢圖`
-                        },
-                        legend: {
-                            display: true,
-                            position: 'top'
-                        }
+                // 合併標籤
+                const allLabels = [...historicalLabels, ...forecastLabels];
+                
+                // 創建專業的數據集 - 修正數據對齊問題
+                const datasets = [];
+                
+                // 創建完整的數據數組，確保每個時間點都有對應的數據
+                const completeData = [];
+                const historicalCount = historicalData.length;
+                const forecastCount = forecastData.length;
+                
+                // 歷史數據部分
+                for (let i = 0; i < historicalCount; i++) {
+                    completeData.push({
+                        historical: historicalData[i],
+                        forecast: null,
+                        isHistorical: true
+                    });
+                }
+                
+                // 預測數據部分
+                for (let i = 0; i < forecastCount; i++) {
+                    completeData.push({
+                        historical: null,
+                        forecast: forecastData[i],
+                        isHistorical: false
+                    });
+                }
+                
+                // 歷史數據集 - 使用專業的藍色系
+                if (historicalData.length > 0) {
+                    const historicalDataset = {
+                        label: '📊 歷史業績',
+                        data: completeData.map(item => item.historical),
+                        borderColor: '#1f77b4', // 專業藍色
+                        backgroundColor: 'rgba(31, 119, 180, 0.15)',
+                        borderWidth: 4,
+                        fill: false,
+                        tension: 0.3, // 適中平滑
+                        spanGaps: false,
+                        pointRadius: 8,
+                        pointHoverRadius: 12,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#1f77b4',
+                        pointBorderWidth: 3,
+                        pointStyle: 'circle',
+                        pointHitRadius: 10
+                    };
+                    datasets.push(historicalDataset);
+                }
+                
+                // 預測數據集 - 使用專業的綠色系
+                if (forecastData.length > 0) {
+                    const forecastDataset = {
+                        label: '🔮 預測趨勢',
+                        data: completeData.map(item => item.forecast),
+                        borderColor: '#2ca02c', // 專業綠色
+                        backgroundColor: 'rgba(44, 160, 44, 0.15)',
+                        borderWidth: 4,
+                        fill: false,
+                        tension: 0.3, // 適中平滑
+                        spanGaps: false,
+                        pointRadius: 8,
+                        pointHoverRadius: 12,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#2ca02c',
+                        pointBorderWidth: 3,
+                        pointStyle: 'diamond',
+                        pointHitRadius: 10,
+                        borderDash: [10, 5] // 虛線樣式
+                    };
+                    datasets.push(forecastDataset);
+                }
+                
+                // 平滑連接線 - 從歷史數據的最後一點到預測數據的第一點
+                if (historicalData.length > 0 && forecastData.length > 0) {
+                    const lastHistorical = historicalData[historicalData.length - 1];
+                    const firstForecast = forecastData[0];
+                    
+                    // 創建連接數據，只在歷史和預測之間有值
+                    const connectionData = completeData.map((item, index) => {
+                        if (index === historicalCount - 1) return lastHistorical;
+                        if (index === historicalCount) return firstForecast;
+                        return null;
+                    });
+                    
+                    datasets.push({
+                        label: '🔄 趨勢連接',
+                        data: connectionData,
+                        borderColor: '#ff7f0e', // 溫暖橙色
+                        backgroundColor: 'rgba(255, 127, 14, 0.2)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.8, // 高度平滑
+                        spanGaps: true,
+                        pointRadius: 0,
+                        pointHoverRadius: 0,
+                        pointHitRadius: 0
+                    });
+                }
+                
+                // 創建專業圖表
+                window.forecastChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: allLabels,
+                        datasets: datasets
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        plugins: {
                             title: {
                                 display: true,
-                                text: '銷售額 (元)'
+                                text: `📈 ${result.period_text || '業績'} 預測趨勢分析`,
+                                font: {
+                                    size: 18,
+                                    weight: 'bold',
+                                    family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                                },
+                                color: '#2c3e50',
+                                padding: 20
+                            },
+                            subtitle: {
+                                display: true,
+                                text: '基於歷史數據的智能預測分析',
+                                font: {
+                                    size: 14,
+                                    family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                                },
+                                color: '#7f8c8d',
+                                padding: {
+                                    bottom: 20
+                                }
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 20,
+                                    font: {
+                                        size: 12,
+                                        weight: 'bold'
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(44, 62, 80, 0.95)',
+                                titleColor: '#ffffff',
+                                bodyColor: '#ffffff',
+                                borderColor: '#34495e',
+                                borderWidth: 1,
+                                cornerRadius: 8,
+                                displayColors: true,
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.dataset.label || '';
+                                        const value = context.parsed.y;
+                                        return `${label}: NT$ ${value.toLocaleString()}`;
+                                    }
+                                }
                             }
                         },
-                        x: {
-                            title: {
-                                display: true,
-                                text: '期間'
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(189, 195, 199, 0.2)',
+                                    drawBorder: false,
+                                    lineWidth: 1
+                                },
+                                border: {
+                                    color: '#34495e',
+                                    width: 2
+                                },
+                                title: {
+                                    display: true,
+                                    text: '銷售額 (新台幣)',
+                                    font: {
+                                        size: 16,
+                                        weight: 'bold',
+                                        family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                                    },
+                                    color: '#2c3e50',
+                                    padding: 15
+                                },
+                                ticks: {
+                                    font: {
+                                        size: 13,
+                                        weight: '500'
+                                    },
+                                    color: '#34495e',
+                                    padding: 8,
+                                    callback: function(value) {
+                                        if (value >= 1000000) {
+                                            return (value / 1000000).toFixed(1) + 'M';
+                                        } else if (value >= 1000) {
+                                            return (value / 1000).toFixed(0) + 'K';
+                                        }
+                                        return value.toLocaleString();
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    color: 'rgba(189, 195, 199, 0.15)',
+                                    drawBorder: false,
+                                    lineWidth: 1
+                                },
+                                border: {
+                                    color: '#34495e',
+                                    width: 2
+                                },
+                                title: {
+                                    display: true,
+                                    text: '時間期間',
+                                    font: {
+                                        size: 16,
+                                        weight: 'bold',
+                                        family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                                    },
+                                    color: '#2c3e50',
+                                    padding: 15
+                                },
+                                ticks: {
+                                    font: {
+                                        size: 12,
+                                        weight: '500'
+                                    },
+                                    color: '#34495e',
+                                    maxRotation: 30,
+                                    minRotation: 0,
+                                    padding: 8,
+                                    autoSkip: true,
+                                    maxTicksLimit: 12
+                                }
+                            }
+                        },
+                        elements: {
+                            point: {
+                                hoverBackgroundColor: '#ffffff',
+                                hoverBorderWidth: 4,
+                                hoverRadius: 12
+                            },
+                            line: {
+                                borderJoinStyle: 'round',
+                                borderCapStyle: 'round'
+                            }
+                        },
+                        animation: {
+                            duration: 2500,
+                            easing: 'easeOutQuart',
+                            delay: function(context) {
+                                return context.dataIndex * 50;
+                            }
+                        },
+                        layout: {
+                            padding: {
+                                top: 25,
+                                right: 25,
+                                bottom: 25,
+                                left: 25
+                            }
+                        },
+                        plugins: {
+                            ...window.forecastChart.options.plugins,
+                            annotation: {
+                                annotations: {
+                                    // 添加垂直分隔線，區分歷史和預測
+                                    verticalLine: {
+                                        type: 'line',
+                                        xMin: historicalCount - 0.5,
+                                        xMax: historicalCount - 0.5,
+                                        borderColor: 'rgba(255, 127, 14, 0.6)',
+                                        borderWidth: 2,
+                                        borderDash: [5, 5],
+                                        label: {
+                                            content: '預測開始',
+                                            position: 'top',
+                                            backgroundColor: 'rgba(255, 127, 14, 0.8)',
+                                            color: '#ffffff',
+                                            font: {
+                                                size: 11,
+                                                weight: 'bold'
+                                            },
+                                            padding: 4,
+                                            borderRadius: 4
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
+                });
+                
+                console.log('專業預測圖表生成成功');
+                
+                // 添加圖表說明
+                const chartContainer = canvas.parentElement;
+                if (chartContainer) {
+                    const explanationDiv = document.createElement('div');
+                    explanationDiv.className = 'mt-3 p-3 bg-light rounded';
+                    explanationDiv.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-4 text-center">
+                                <div class="d-flex align-items-center justify-content-center mb-2">
+                                    <div class="me-2" style="width: 20px; height: 20px; background-color: #1f77b4; border-radius: 50%;"></div>
+                                    <strong>歷史業績</strong>
+                                </div>
+                                <small class="text-muted">基於實際銷售數據</small>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <div class="d-flex align-items-center justify-content-center mb-2">
+                                    <div class="me-2" style="width: 20px; height: 20px; background-color: #2ca02c; border-radius: 50%;"></div>
+                                    <strong>預測趨勢</strong>
+                                </div>
+                                <small class="text-muted">AI智能預測結果</small>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <div class="d-flex align-items-center justify-content-center mb-2">
+                                    <div class="me-2" style="width: 20px; height: 20px; background-color: #ff7f0e; border-radius: 50%;"></div>
+                                    <strong>趨勢連接</strong>
+                                </div>
+                                <small class="text-muted">平滑過渡趨勢線</small>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // 移除舊的說明
+                    const oldExplanation = chartContainer.querySelector('.bg-light.rounded');
+                    if (oldExplanation) {
+                        oldExplanation.remove();
+                    }
+                    
+                    chartContainer.appendChild(explanationDiv);
                 }
-            });
-            
-            console.log('預測圖表生成成功');
-        } catch (error) {
-            console.error('生成預測圖表時發生錯誤:', error);
-            // 在圖表區域顯示錯誤信息
-            const chartContainer = document.querySelector('#forecastChart').parentElement;
-            if (chartContainer) {
-                chartContainer.innerHTML = `
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        圖表生成失敗: ${error.message}
-                    </div>
-                `;
+                
+            } catch (error) {
+                console.error('生成專業預測圖表時發生錯誤:', error);
+                const chartContainer = document.querySelector('#forecastChart').parentElement;
+                if (chartContainer) {
+                    chartContainer.innerHTML = `
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            圖表生成失敗: ${error.message}
+                        </div>
+                    `;
+                }
             }
-        }
         }
 
         // 格式化預測內容

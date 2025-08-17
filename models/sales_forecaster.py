@@ -128,9 +128,18 @@ class SalesForecaster:
             # 計算預測時間範圍
             forecast_range = f"{forecast_dates[0]} - {forecast_dates[-1]}"
             
+            # 準備歷史數據用於圖表
+            historical_data_for_chart = []
+            for i, (date_label, sales_value) in enumerate(zip(date_labels, historical_data)):
+                historical_data_for_chart.append({
+                    'period': date_label,
+                    'sales': float(sales_value)
+                })
+            
             return {
                 'success': True,
                 'forecast_data': forecast_data,
+                'historical_data': historical_data_for_chart,  # 添加歷史數據
                 'total_forecast': total_forecast,
                 'avg_forecast': avg_forecast,
                 'plot_path': plot_path,

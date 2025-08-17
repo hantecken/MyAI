@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>統一預測問題診斷工具</title>
+    
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { margin: 5px; padding: 10px 15px; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .log { max-height: 300px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 統一預測問題診斷工具</h1>
+    
+    <div class="section info">
+        <h3>📋 診斷說明</h3>
+        <p>此工具用於診斷統一預測圖表頁面顯示空白的問題。請按照以下步驟進行診斷：</p>
+        <ol>
+            <li>點擊「開始診斷」按鈕</li>
+            <li>查看各項檢查結果</li>
+            <li>如果發現問題，請記錄錯誤訊息</li>
+            <li>根據診斷結果進行相應修復</li>
+        </ol>
+    </div>
+    
+    <div class="section">
+        <h3>🎯 診斷控制</h3>
+        <button onclick="startDiagnosis()">開始診斷</button>
+        <button onclick="clearResults()">清除結果</button>
+        <button onclick="testChartJS()">測試 Chart.js</button>
+        <button onclick="testAPI()">測試 API</button>
+        <button onclick="checkConsole()">檢查控制台</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <div class="section">
+        <h3>📊 診斷日誌</h3>
+        <div id="log" class="log"></div>
+    </div>
+    
+    <script>
+        let logCount = 0;
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById('log');
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<strong>[${timestamp}]</strong> ${message}`;
+            logEntry.className = type;
+            logDiv.appendChild(logEntry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            logCount++;
+        }
+        
+        function addResult(title, content, type = 'info') {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `section ${type}`;
+            resultDiv.innerHTML = `
+                <h4>${title}</h4>
+                <div>${content}</div>
+            `;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        async function startDiagnosis() {
+            log('開始執行完整診斷...', 'info');
+            
+            // 清除之前結果
+            clearResults();
+            
+            // 1. 檢查基本環境
+            await checkBasicEnvironment();
+            
+            // 2. 檢查外部資源
+            await checkExternalResources();
+            
+            // 3. 檢查 API 端點
+            await checkAPIEndpoints();
+            
+            // 4. 檢查頁面功能
+            checkPageFunctionality();
+            
+            log('診斷完成！', 'success');
+        }
+        
+        async function checkBasicEnvironment() {
+            log('檢查基本環境...', 'info');
+            
+            const checks = [
+                { name: 'JavaScript 執行', test: () => typeof window !== 'undefined' },
+                { name: 'DOM 支援', test: () => typeof document !== 'undefined' },
+                { name: 'Fetch API', test: () => typeof fetch !== 'undefined' },
+                { name: 'Console 支援', test: () => typeof console !== 'undefined' }
+            ];
+            
+            let results = '';
+            checks.forEach(check => {
+                const passed = check.test();
+                const status = passed ? '✅ 通過' : '❌ 失敗';
+                results += `<li>${check.name}: ${status}</li>`;
+                log(`${check.name}: ${status}`, passed ? 'success' : 'error');
+            });
+            
+            addResult('🌍 基本環境檢查', `<ul>${results}</ul>`, 'info');
+        }
+        
+        async function checkExternalResources() {
+            log('檢查外部資源...', 'info');
+            
+            const resources = [
+                { name: 'Bootstrap CSS', url: 'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css' },
+                { name: 'Font Awesome', url: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css' },
+                { name: 'Chart.js', url: 'https://cdn.jsdelivr.net/npm/chart.js' },
+                { name: 'Bootstrap JS', url: 'https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js' }
+            ];
+            
+            let results = '';
+            for (const resource of resources) {
+                try {
+                    const response = await fetch(resource.url, { method: 'HEAD' });
+                    const status = response.ok ? '✅ 可訪問' : '❌ 無法訪問';
+                    results += `<li>${resource.name}: ${status} (HTTP ${response.status})</li>`;
+                    log(`${resource.name}: ${status}`, response.ok ? 'success' : 'error');
+                } catch (error) {
+                    results += `<li>${resource.name}: ❌ 網路錯誤 (${error.message})</li>`;
+                    log(`${resource.name}: 網路錯誤 - ${error.message}`, 'error');
+                }
+            }
+            
+            addResult('📦 外部資源檢查', `<ul>${results}</ul>`, 'info');
+        }
+        
+        async function checkAPIEndpoints() {
+            log('檢查 API 端點...', 'info');
+            
+            const endpoints = [
+                { name: '統一預測 API', url: '/api/unified-forecast', method: 'OPTIONS' },
+                { name: '預測Agent API', url: '/api/forecast-agent', method: 'OPTIONS' },
+                { name: '統一預測頁面', url: '/unified-forecast', method: 'GET' },
+                { name: '主頁', url: '/', method: 'GET' }
+            ];
+            
+            let results = '';
+            for (const endpoint of endpoints) {
+                try {
+                    const response = await fetch(endpoint.url, { method: endpoint.method });
+                    const status = response.ok ? '✅ 正常' : '⚠️ 異常';
+                    results += `<li>${endpoint.name}: ${status} (HTTP ${response.status})</li>`;
+                    log(`${endpoint.name}: ${status}`, response.ok ? 'success' : 'warning');
+                } catch (error) {
+                    results += `<li>${endpoint.name}: ❌ 錯誤 (${error.message})</li>`;
+                    log(`${endpoint.name}: 錯誤 - ${error.message}`, 'error');
+                }
+            }
+            
+            addResult('🔌 API 端點檢查', `<ul>${results}</ul>`, 'info');
+        }
+        
+        function checkPageFunctionality() {
+            log('檢查頁面功能...', 'info');
+            
+            const checks = [
+                { name: '頁面標題', test: () => document.title.includes('統一預測') },
+                { name: '導航欄', test: () => document.querySelector('nav') !== null },
+                { name: '主要容器', test: () => document.querySelector('.container') !== null },
+                { name: '預測控制面板', test: () => document.querySelector('.card-header') !== null }
+            ];
+            
+            let results = '';
+            checks.forEach(check => {
+                const passed = check.test();
+                const status = passed ? '✅ 正常' : '❌ 異常';
+                results += `<li>${check.name}: ${status}</li>`;
+                log(`${check.name}: ${status}`, passed ? 'success' : 'error');
+            });
+            
+            addResult('📄 頁面功能檢查', `<ul>${results}</ul>`, 'info');
+        }
+        
+        function testChartJS() {
+            log('測試 Chart.js 功能...', 'info');
+            
+            if (typeof Chart === 'undefined') {
+                addResult('❌ Chart.js 測試失敗', 'Chart.js 未載入，請檢查網路連接或 CDN 狀態', 'error');
+                log('Chart.js 未載入', 'error');
+                return;
+            }
+            
+            try {
+                // 創建測試 canvas
+                const testCanvas = document.createElement('canvas');
+                testCanvas.id = 'testChart';
+                testCanvas.width = 400;
+                testCanvas.height = 200;
+                document.body.appendChild(testCanvas);
+                
+                const ctx = testCanvas.getContext('2d');
+                const testChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['測試1', '測試2', '測試3'],
+                        datasets: [{
+                            label: '測試數據',
+                            data: [1, 2, 3],
+                            borderColor: 'rgb(75, 192, 192)'
+                        }]
+                    }
+                });
+                
+                addResult('✅ Chart.js 測試成功', '圖表創建成功，Chart.js 功能正常', 'success');
+                log('Chart.js 測試成功', 'success');
+                
+                // 清理測試元素
+                setTimeout(() => {
+                    document.body.removeChild(testCanvas);
+                }, 3000);
+                
+            } catch (error) {
+                addResult('❌ Chart.js 測試失敗', `圖表創建失敗: ${error.message}`, 'error');
+                log(`Chart.js 測試失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testAPI() {
+            log('測試 API 功能...', 'info');
+            
+            try {
+                const response = await fetch('/api/unified-forecast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'month',
+                        periods: 3,
+                        enable_ai_analysis: false
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    addResult('✅ API 測試成功', `API 響應正常，狀態: ${data.success}`, 'success');
+                    log('API 測試成功', 'success');
+                } else {
+                    addResult('⚠️ API 測試異常', `HTTP ${response.status}: ${response.statusText}`, 'warning');
+                    log(`API 測試異常: HTTP ${response.status}`, 'warning');
+                }
+                
+            } catch (error) {
+                addResult('❌ API 測試失敗', `網路錯誤: ${error.message}`, 'error');
+                log(`API 測試失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        function checkConsole() {
+            log('檢查瀏覽器控制台...', 'info');
+            
+            const consoleInfo = `
+                <h5>控制台檢查步驟：</h5>
+                <ol>
+                    <li>按 F12 或右鍵選擇「檢查」</li>
+                    <li>切換到「Console」標籤</li>
+                    <li>查看是否有紅色錯誤訊息</li>
+                    <li>檢查是否有 JavaScript 載入失敗</li>
+                    <li>查看網路請求是否成功</li>
+                </ol>
+                <p><strong>常見錯誤：</strong></p>
+                <ul>
+                    <li>Chart.js 載入失敗</li>
+                    <li>Bootstrap 樣式載入失敗</li>
+                    <li>API 請求失敗</li>
+                    <li>JavaScript 語法錯誤</li>
+                </ul>
+            `;
+            
+            addResult('🔍 控制台檢查指南', consoleInfo, 'info');
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('log').innerHTML = '';
+            logCount = 0;
+            log('結果已清除', 'info');
+        }
+        
+        // 頁面載入完成
+        document.addEventListener('DOMContentLoaded', function() {
+            log('診斷工具頁面載入完成', 'success');
+            addResult('🚀 診斷工具就緒', '點擊「開始診斷」按鈕開始檢查系統狀態', 'success');
+        });
+        
+        // 錯誤處理
+        window.addEventListener('error', function(e) {
+            log(`JavaScript 錯誤: ${e.message}`, 'error');
+            addResult('❌ JavaScript 錯誤', `錯誤訊息: ${e.message}<br>檔案: ${e.filename}<br>行號: ${e.lineno}`, 'error');
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+            log(`未處理的 Promise 拒絕: ${e.reason}`, 'error');
+            addResult('❌ Promise 錯誤', `錯誤原因: ${e.reason}`, 'error');
+        });
+    </script>
+</body>
+</html>

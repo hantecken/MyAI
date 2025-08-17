@@ -235,13 +235,9 @@ class UnifiedForecaster:
             # 生成預測
             forecast = results.forecast(steps=months_to_forecast)
             
-            # 從系統當前日期的下個月開始預測
+            # 從系統當前日期的當月開始預測
             current_date = datetime.now()
             start_date = current_date.replace(day=1)
-            if current_date.month == 12:
-                start_date = start_date.replace(year=current_date.year + 1, month=1)
-            else:
-                start_date = start_date.replace(month=current_date.month + 1)
             
             # 生成預測期間的日期標籤
             forecast_dates = []
@@ -679,9 +675,14 @@ class UnifiedForecaster:
             }
     
     def _get_historical_data(self):
-        """獲取歷史數據，使用與原始預測系統相同的查詢方式"""
+        """獲取歷史數據，使用與原始預測系統相同的查詢方式，但排除當月數據"""
         try:
-            # 使用與原始預測系統相同的查詢
+            # 獲取當前日期
+            current_date = datetime.now()
+            current_year = current_date.year
+            current_month = current_date.month
+            
+            # 使用與原始預測系統相同的查詢，但排除當月數據
             query = """
                 SELECT 
                     t.year,
@@ -689,11 +690,12 @@ class UnifiedForecaster:
                     COALESCE(SUM(f.amount), 0) as monthly_sales
                 FROM sales_fact f
                 JOIN dim_time t ON f.time_id = t.time_id
+                WHERE (t.year < ?) OR (t.year = ? AND t.month < ?)
                 GROUP BY t.year, t.month
                 ORDER BY t.year, t.month
             """
             
-            result = self.db_manager.execute_query(query)
+            result = self.db_manager.execute_query(query, (current_year, current_year, current_month))
             
             if result.empty:
                 raise Exception("資料庫查詢返回空結果")

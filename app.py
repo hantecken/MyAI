@@ -14,6 +14,7 @@ from views.analysis_views import init_analysis_views
 from routes.forecast_routes import register_forecast_routes
 from routes.unified_forecast_routes import register_unified_forecast_routes
 from routes.vector_routes import register_vector_routes
+from routes.crewai_forecast_routes import register_crewai_forecast_routes
 
 # 導入排程器
 from scheduler import start_scheduler_thread, get_schedule_status
@@ -55,6 +56,9 @@ def create_app():
     # 註冊向量搜尋路由 (新功能)
     register_vector_routes(app, hybrid_data_manager)
     
+    # 註冊智慧分析預測路由 (新功能)
+    register_crewai_forecast_routes(app)
+    
     # 初始化視圖 (向後相容)
     init_analysis_views(app, analysis_controller, hybrid_data_manager)
     
@@ -74,9 +78,8 @@ if __name__ == '__main__':
     
     print("🎯 向量資料庫版本應用程式已啟動，請訪問:")
     print("  - 向量搜尋系統: http://127.0.0.1:5010/vector-search-test")
-    print("  - 統一預測系統: http://127.0.0.1:5010/unified-forecast-test")
-    print("  - 預測Agent系統: http://127.0.0.1:5010/forecast-agent-test")
-    print("  - 原始預測系統: http://127.0.0.1:5010/forecast-test")
+    print("  - 統一預測系統: http://127.0.0.1:5010/unified-forecast")
+    print("  - 智慧分析測試: http://127.0.0.1:5010/crewai/test-page")
     print("\n🔍 新增向量搜尋 API:")
     print("  - POST /api/vector/search/products - 產品相似性搜尋")
     print("  - POST /api/vector/search/customers - 客戶相似性搜尋")
@@ -85,6 +88,11 @@ if __name__ == '__main__':
     print("  - POST /api/vector/detect/anomalies - 異常檢測")
     print("  - GET /api/vector/status - 向量資料庫狀態")
     print("  - POST /api/vector/refresh - 重新整理向量資料庫")
+    
+    print("\n🤖 新增智慧分析預測 API:")
+    print("  - POST /crewai/forecast - CrewAI 智慧預測")
+    print("  - GET /crewai/status - CrewAI 狀態檢查")
+    print("  - GET /crewai/test - CrewAI 功能測試")
     
     app.run(debug=True, host='0.0.0.0', port=5010)  # 改為 0.0.0.0 支援外部存取
 

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrewAI 智慧分析測試 - NL2Cube 智慧分析系統</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        .test-card {
+            transition: transform 0.2s;
+            border-left: 4px solid #28a745;
+        }
+        
+        .test-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-available { background-color: #28a745; }
+        .status-unavailable { background-color: #dc3545; }
+        .status-loading { background-color: #ffc107; }
+        
+        .result-section {
+            min-height: 200px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 導航欄 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-robot me-2"></i>
+                CrewAI 智慧分析測試
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/"><i class="fas fa-home me-1"></i>首頁</a>
+                <a class="nav-link" href="/unified-forecast"><i class="fas fa-chart-line me-1"></i>統一預測</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- 頁面標題 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h1 class="mb-2">
+                            <i class="fas fa-robot me-3"></i>
+                            CrewAI 智慧分析測試平台
+                        </h1>
+                        <p class="mb-0 fs-5">測試 CrewAI 智慧預測和分析功能</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 功能測試面板 -->
+        <div class="row">
+            <!-- 狀態檢查 -->
+            <div class="col-md-4 mb-4">
+                <div class="card test-card shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            系統狀態檢查
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="status-content">
+                            <p class="text-muted">點擊按鈕檢查系統狀態</p>
+                        </div>
+                        <button class="btn btn-info w-100" onclick="checkStatus()">
+                            <i class="fas fa-sync-alt me-2"></i>
+                            檢查狀態
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 智慧預測測試 -->
+            <div class="col-md-4 mb-4">
+                <div class="card test-card shadow-sm">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>
+                            智慧預測測試
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">預測期數</label>
+                            <select id="forecastPeriods" class="form-select">
+                                <option value="6">6 個月</option>
+                                <option value="12" selected>12 個月</option>
+                                <option value="18">18 個月</option>
+                                <option value="24">24 個月</option>
+                            </select>
+                        </div>
+                        <div id="forecast-content">
+                            <p class="text-muted">設定預測期數後點擊測試</p>
+                        </div>
+                        <button class="btn btn-success w-100" onclick="testForecast()">
+                            <i class="fas fa-play me-2"></i>
+                            執行預測
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 功能測試 -->
+            <div class="col-md-4 mb-4">
+                <div class="card test-card shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="fas fa-flask me-2"></i>
+                            功能測試
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="test-content">
+                            <p class="text-muted">測試基本功能是否正常</p>
+                        </div>
+                        <button class="btn btn-warning w-100" onclick="testBasicFunction()">
+                            <i class="fas fa-vial me-2"></i>
+                            執行測試
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 額外功能按鈕 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-gradient text-white" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="card-body text-center">
+                        <h5 class="mb-3">
+                            <i class="fas fa-chart-area me-2"></i>
+                            業績預測系統
+                        </h5>
+                        <p class="mb-3">使用完整的預測圖表和分析功能</p>
+                        <a href="/unified-forecast" class="btn btn-light btn-lg">
+                            <i class="fas fa-chart-line me-2"></i>
+                            前往業績預測
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+
+        <!-- 測試結果顯示 -->
+        <div class="row">
+            <div class="col-12">
+                <div class="result-section" id="result-section">
+                    <div class="text-center text-muted">
+                        <i class="fas fa-robot fa-3x mb-3"></i>
+                        <h5>測試結果將在此顯示</h5>
+                        <p>請點擊上方按鈕開始測試</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 檢查系統狀態
+        async function checkStatus() {
+            try {
+                console.log('🔍 開始檢查系統狀態...');
+                
+                const statusContent = document.getElementById('status-content');
+                statusContent.innerHTML = `
+                    <div class="text-center">
+                        <div class="spinner-border spinner-border-sm text-info" role="status"></div>
+                        <p class="mt-2 mb-0">檢查中...</p>
+                    </div>
+                `;
+                
+                const response = await fetch('/crewai/status');
+                const data = await response.json();
+                
+                if (data.available) {
+                    statusContent.innerHTML = `
+                        <div class="text-success">
+                            <span class="status-indicator status-available"></span>
+                            <strong>系統正常</strong>
+                            <br><small>時間戳記：${data.timestamp}</small>
+                        </div>
+                    `;
+                } else {
+                    statusContent.innerHTML = `
+                        <div class="text-danger">
+                            <span class="status-indicator status-unavailable"></span>
+                            <strong>系統異常</strong>
+                            <br><small>請檢查 CrewAI 安裝</small>
+                        </div>
+                    `;
+                }
+                
+                showResult('狀態檢查', data, 'info');
+                
+            } catch (error) {
+                console.error('❌ 狀態檢查失敗:', error);
+                statusContent.innerHTML = `
+                    <div class="text-danger">
+                        <span class="status-indicator status-unavailable"></span>
+                        <strong>檢查失敗</strong>
+                        <br><small>錯誤：${error.message}</small>
+                    </div>
+                `;
+                
+                showResult('狀態檢查', { error: error.message }, 'danger');
+            }
+        }
+        
+        // 測試智慧預測
+        async function testForecast() {
+            try {
+                console.log('🚀 開始測試智慧預測...');
+                
+                const periods = document.getElementById('forecastPeriods').value;
+                const forecastContent = document.getElementById('forecast-content');
+                
+                forecastContent.innerHTML = `
+                    <div class="text-center">
+                        <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+                        <p class="mt-2 mb-0">執行預測中...</p>
+                    </div>
+                `;
+                
+                const response = await fetch('/crewai/forecast', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ periods: parseInt(periods) })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    forecastContent.innerHTML = `
+                        <div class="text-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>預測成功</strong>
+                            <br><small>期數：${data.periods}</small>
+                        </div>
+                    `;
+                } else {
+                    forecastContent.innerHTML = `
+                        <div class="text-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>預測失敗</strong>
+                            <br><small>錯誤：${data.error}</small>
+                        </div>
+                    `;
+                }
+                
+                showResult('智慧預測測試', data, data.success ? 'success' : 'danger');
+                
+            } catch (error) {
+                console.error('❌ 智慧預測測試失敗:', error);
+                forecastContent.innerHTML = `
+                    <div class="text-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>測試失敗</strong>
+                        <br><small>錯誤：${error.message}</small>
+                    </div>
+                `;
+                
+                showResult('智慧預測測試', { error: error.message }, 'danger');
+            }
+        }
+        
+        // 測試基本功能
+        async function testBasicFunction() {
+            try {
+                console.log('🧪 開始測試基本功能...');
+                
+                const testContent = document.getElementById('test-content');
+                testContent.innerHTML = `
+                    <div class="text-center">
+                        <div class="spinner-border spinner-border-sm text-warning" role="status"></div>
+                        <p class="mt-2 mb-0">測試中...</p>
+                    </div>
+                `;
+                
+                const response = await fetch('/crewai/test');
+                const data = await response.json();
+                
+                if (data.success) {
+                    testContent.innerHTML = `
+                        <div class="text-success">
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>功能正常</strong>
+                            <br><small>測試通過</small>
+                        </div>
+                    `;
+                } else {
+                    testContent.innerHTML = `
+                        <div class="text-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>功能異常</strong>
+                            <br><small>錯誤：${data.error}</small>
+                        </div>
+                    `;
+                }
+                
+                showResult('基本功能測試', data, data.success ? 'success' : 'danger');
+                
+            } catch (error) {
+                console.error('❌ 基本功能測試失敗:', error);
+                testContent.innerHTML = `
+                    <div class="text-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>測試失敗</strong>
+                        <br><small>錯誤：${error.message}</small>
+                    </div>
+                `;
+                
+                showResult('基本功能測試', { error: error.message }, 'danger');
+            }
+        }
+        
+        // 顯示測試結果
+        function showResult(title, data, type) {
+            const resultSection = document.getElementById('result-section');
+            const alertClass = `alert-${type}`;
+            const iconClass = type === 'success' ? 'check-circle' : 
+                             type === 'danger' ? 'exclamation-triangle' : 
+                             type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+            
+            resultSection.innerHTML = `
+                <div class="alert ${alertClass} alert-dismissible fade show">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-${iconClass} me-2"></i>
+                        ${title} 結果
+                    </h5>
+                    <hr>
+                    <pre class="mb-0" style="white-space: pre-wrap; font-size: 14px;">${JSON.stringify(data, null, 2)}</pre>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+        }
+        
+        // 頁面載入完成後的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('CrewAI 智慧分析測試頁面載入完成');
+            
+            // 自動檢查狀態
+            setTimeout(checkStatus, 1000);
+        });
+    </script>
+</body>
+</html>

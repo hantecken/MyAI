@@ -46,11 +46,36 @@ class AnalysisController:
         print(f"     - 比較期間: {last_start} 到 {last_end}")
         print(f"     - 期間文字: {period_text}")
 
+        # 統一處理查詢中的時間格式
+        processed_query = query
+        
+        # 1. 統一處理月份的中文表示
+        month_mapping = {
+            '一月': '01', '二月': '02', '三月': '03', '四月': '04',
+            '五月': '05', '六月': '06', '七月': '07', '八月': '08',
+            '九月': '09', '十月': '10', '十一月': '11', '十二月': '12'
+        }
+        
+        for chinese_month, numeric_month in month_mapping.items():
+            # 將 "2025年七月" 轉換為 "2025年07月"
+            processed_query = processed_query.replace(f"年{chinese_month}", f"年{numeric_month}月")
+        
+        # 2. 統一處理季度格式
+        quarter_mapping = {
+            '季1': 'Q1', '季2': 'Q2', '季3': 'Q3', '季4': 'Q4',
+            'q1': 'Q1', 'q2': 'Q2', 'q3': 'Q3', 'q4': 'Q4'
+        }
+        
+        for quarter_text, quarter_code in quarter_mapping.items():
+            processed_query = processed_query.replace(quarter_text, quarter_code)
+        
+        print(f"   處理後的查詢: {processed_query}")
+
         # 嘗試解析具體的年月格式
         
         # 首先嘗試解析 "YYYY/MM" 或 "YYYY-MM" 格式 (如: 2025/07, 2025-07)
         slash_dash_pattern = r'(\d{4})[/-](\d{1,2})'
-        slash_dash_matches = re.findall(slash_dash_pattern, query)
+        slash_dash_matches = re.findall(slash_dash_pattern, processed_query)
         
         if len(slash_dash_matches) >= 2:
             # 找到兩個 YYYY/MM 或 YYYY-MM 格式，第一個作為當前期間，第二個作為比較期間
@@ -81,7 +106,7 @@ class AnalysisController:
         else:
             # 首先嘗試匹配純年份格式 "2025年"
             year_pattern = r'(\d{4})年(?!\d{1,2}月|Q\d)'
-            year_matches = re.findall(year_pattern, query)
+            year_matches = re.findall(year_pattern, processed_query)
             
             if len(year_matches) >= 2:
                 # 找到兩個年份，第一個作為當前期間，第二個作為比較期間
@@ -112,7 +137,7 @@ class AnalysisController:
             else:
                 # 匹配 "2025年06月" 或 "2025年6月" 格式
                 year_month_pattern = r'(\d{4})年(\d{1,2})月'
-                matches = re.findall(year_month_pattern, query)
+                matches = re.findall(year_month_pattern, processed_query)
                 
                 if len(matches) >= 2:
                     # 找到兩個年月，第一個作為當前期間，第二個作為比較期間
@@ -140,10 +165,10 @@ class AnalysisController:
                     
                     period_text = f"{current_year}年{current_month:02d}月 vs 上月"
                     
-                elif "季" in query or "Q" in query:
+                elif "Q" in processed_query or "季" in processed_query:
                     # 首先嘗試解析純季度格式 "Q1", "Q2" 等
                     pure_quarter_pattern = r'Q(\d)(?!\d{4}年)'
-                    pure_quarter_matches = re.findall(pure_quarter_pattern, query)
+                    pure_quarter_matches = re.findall(pure_quarter_pattern, processed_query)
                     
                     if len(pure_quarter_matches) >= 2:
                         # 找到兩個純季度，第一個作為當前期間，第二個作為比較期間
@@ -193,11 +218,11 @@ class AnalysisController:
                     else:
                         # 嘗試解析具體的季度比較格式
                         quarter_pattern = r'(\d{4})年Q(\d)'
-                        quarter_matches = re.findall(quarter_pattern, query)
+                        quarter_matches = re.findall(quarter_pattern, processed_query)
                         
                         # 嘗試解析相對時間表達
                         relative_pattern = r'(去年|前年|今年)Q(\d)'
-                        relative_matches = re.findall(relative_pattern, query)
+                        relative_matches = re.findall(relative_pattern, processed_query)
                         
                         if len(quarter_matches) >= 2:
                             # 找到兩個具體年份的季度，第一個作為當前期間，第二個作為比較期間
@@ -263,6 +288,11 @@ class AnalysisController:
                             last_end = (last_start + relativedelta(months=3)) - timedelta(days=1)
                             
                             period_text = f"{current_year}年Q{current_quarter} vs {last_year}年Q{last_quarter}"
+                            
+                            # 確保設置了所有必要的變數
+                            print(f"   季度查詢解析完成: {current_year}年Q{current_quarter}")
+                            print(f"   當前期間: {current_start} 到 {current_end}")
+                            print(f"   比較期間: {last_start} 到 {last_end}")
                             
                         else:
                             # 沒有找到具體季度格式，使用預設的當前季度 vs 上季度
@@ -455,12 +485,12 @@ class AnalysisController:
                 'analysis_type': 'vector',
                 'semantic_query': semantic_query,
                 'vector_results': vector_results,
-                'period_text': parsed['period_text'],
-                'current_dimension': parsed['dimension'],
-                'current_start': parsed['current_start'],
-                'current_end': parsed['current_end'],
-                'last_start': parsed['last_start'],
-                'last_end': parsed['last_end']
+                'period_text': parsed.get('period_text', '未知期間'),
+                'current_dimension': parsed.get('dimension', '未知維度'),
+                'current_start': parsed.get('current_start', '未知'),
+                'current_end': parsed.get('current_end', '未知'),
+                'last_start': parsed.get('last_start', '未知'),
+                'last_end': parsed.get('last_end', '未知')
             }
             
         except Exception as e:
@@ -474,15 +504,15 @@ class AnalysisController:
         """使用傳統SQL進行期間分析"""
         try:
             print(f"\n🔍 開始執行 SQL 期間分析...")
-            print(f"   當前期間: {parsed['current_start']} 到 {parsed['current_end']}")
-            print(f"   比較期間: {parsed['last_start']} 到 {parsed['last_end']}")
-            print(f"   分析維度: {parsed['dimension']}")
+            print(f"   當前期間: {parsed.get('current_start', '未知')} 到 {parsed.get('current_end', '未知')}")
+            print(f"   比較期間: {parsed.get('last_start', '未知')} 到 {parsed.get('last_end', '未知')}")
+            print(f"   分析維度: {parsed.get('dimension', '未知')}")
             
             # 執行期間比較
             print(f"📊 執行期間比較查詢...")
             period_comparison = self.data_manager.get_period_comparison(
-                parsed['current_start'], parsed['current_end'],
-                parsed['last_start'], parsed['last_end']
+                parsed.get('current_start', '2025-01-01'), parsed.get('current_end', '2025-12-31'),
+                parsed.get('last_start', '2024-01-01'), parsed.get('last_end', '2024-12-31')
             )
             
             print(f"📊 期間比較查詢結果:")
@@ -500,9 +530,9 @@ class AnalysisController:
             # 執行主維度貢獻度分析
             print(f"📈 執行主維度貢獻度分析...")
             driver_analysis = self.data_manager.get_driver_analysis(
-                parsed['current_start'], parsed['current_end'],
-                parsed['last_start'], parsed['last_end'],
-                parsed['dimension']
+                parsed.get('current_start', '2025-01-01'), parsed.get('current_end', '2025-12-31'),
+                parsed.get('last_start', '2024-01-01'), parsed.get('last_end', '2024-12-31'),
+                parsed.get('dimension', 'product')
             )
             
             print(f"📈 主維度貢獻度分析結果:")
@@ -516,7 +546,7 @@ class AnalysisController:
             
             # 獲取可用的 drill down 維度
             print(f"🔍 獲取可用的 drill down 維度...")
-            available_dimensions = self.data_manager.get_available_dimensions(parsed['dimension'])
+            available_dimensions = self.data_manager.get_available_dimensions(parsed.get('dimension', 'product'))
             print(f"   可用維度: {available_dimensions}")
 
             # 新增：多維度參考分析
@@ -526,8 +556,8 @@ class AnalysisController:
                 try:
                     print(f"   分析 {dim_key} 維度...")
                     other_driver = self.data_manager.get_driver_analysis(
-                        parsed['current_start'], parsed['current_end'],
-                        parsed['last_start'], parsed['last_end'],
+                        parsed.get('current_start', '2025-01-01'), parsed.get('current_end', '2025-12-31'),
+                        parsed.get('last_start', '2024-01-01'), parsed.get('last_end', '2024-12-31'),
                         dim_key
                     )
                     # 只取前3名
@@ -599,15 +629,15 @@ class AnalysisController:
                 'diff': diff,
                 'percentage_diff': percentage_diff,
                 'summary': summary,
-                'period_text': parsed['period_text'],
+                'period_text': parsed.get('period_text', '未知期間'),
                 'driver_data': driver_analysis.to_dict('records'),
-                'dimension_text': parsed['dimension_text'],
-                'current_dimension': parsed['dimension'],
+                'dimension_text': parsed.get('dimension_text', '未知維度'),
+                'current_dimension': parsed.get('dimension', 'product'),
                 'available_dimensions': available_dimensions,
-                'current_start': parsed['current_start'],
-                'current_end': parsed['current_end'],
-                'last_start': parsed['last_start'],
-                'last_end': parsed['last_end'],
+                'current_start': parsed.get('current_start', '未知'),
+                'current_end': parsed.get('current_end', '未知'),
+                'last_start': parsed.get('last_start', '未知'),
+                'last_end': parsed.get('last_end', '未知'),
                 'other_dimension_reference': other_dimension_reference_text
             }
         except Exception as e:
@@ -670,13 +700,13 @@ class AnalysisController:
                 'summary': summary,
                 'period_text': f"{current_year}年Q{current_quarter} vs {compare_year}年Q{compare_quarter}",
                 'driver_data': driver_analysis.to_dict('records'),
-                'dimension_text': parsed['dimension_text'],
-                'current_dimension': parsed['dimension'],
-                'available_dimensions': self.data_manager.get_available_dimensions(parsed['dimension']),
-                'current_start': parsed['current_start'],
-                'current_end': parsed['current_end'],
-                'last_start': parsed['last_start'],
-                'last_end': parsed['last_end']
+                'dimension_text': parsed.get('dimension_text', '未知維度'),
+                'current_dimension': parsed.get('dimension', 'product'),
+                'available_dimensions': self.data_manager.get_available_dimensions(parsed.get('dimension', 'product')),
+                'current_start': parsed.get('current_start', '未知'),
+                'current_end': parsed.get('current_end', '未知'),
+                'last_start': parsed.get('last_start', '未知'),
+                'last_end': parsed.get('last_end', '未知')
             }
             
         except Exception as e:
@@ -1333,29 +1363,68 @@ class AnalysisController:
         # 檢查查詢中是否包含明確的時間格式
         import re
         
-        # 檢查是否包含時間格式
+        # 統一處理查詢中的時間格式
+        processed_query = natural_query
+        
+        # 1. 統一處理月份的中文表示
+        month_mapping = {
+            '一月': '01', '二月': '02', '三月': '03', '四月': '04',
+            '五月': '05', '六月': '06', '七月': '07', '八月': '08',
+            '九月': '09', '十月': '10', '十一月': '11', '十二月': '12'
+        }
+        
+        for chinese_month, numeric_month in month_mapping.items():
+            # 將 "2025年七月" 轉換為 "2025年07月"
+            processed_query = processed_query.replace(f"年{chinese_month}", f"年{numeric_month}月")
+        
+        # 2. 統一處理季度格式
+        quarter_mapping = {
+            '季1': 'Q1', '季2': 'Q2', '季3': 'Q3', '季4': 'Q4',
+            'q1': 'Q1', 'q2': 'Q2', 'q3': 'Q3', 'q4': 'Q4'
+        }
+        
+        for quarter_text, quarter_code in quarter_mapping.items():
+            processed_query = processed_query.replace(quarter_text, quarter_code)
+        
+        # 檢查是否包含時間格式（使用處理後的查詢）
         time_patterns = [
             r'\d{4}[/-]\d{1,2}',  # YYYY/MM 或 YYYY-MM
             r'\d{4}年\d{1,2}月',   # YYYY年MM月
             r'Q\d',                # Q1, Q2, etc.
-            r'季',                 # 季度
             r'\d{4}年Q\d'          # YYYY年Q1
         ]
         
-        has_time_format = any(re.search(pattern, natural_query) for pattern in time_patterns)
+        has_time_format = any(re.search(pattern, processed_query) for pattern in time_patterns)
         
         # 只有在查詢中包含明確時間格式時才解析時間
         year = None
         month = None
+        quarter = None
         if has_time_format:
             query_to_parse = original_query if original_query else natural_query
             parsed = self._parse_query(query_to_parse)
-            # 嘗試從 period_text 或 current_start 解析 year/month
-            if parsed and 'current_start' in parsed:
+            
+            # 嘗試從解析結果中獲取時間資訊
+            if parsed:
                 try:
-                    dt = parsed['current_start']
-                    year, month = int(dt[:4]), int(dt[5:7])
-                except Exception:
+                    # 檢查是否有 current_start
+                    if 'current_start' in parsed:
+                        dt = parsed['current_start']
+                        year = int(dt[:4])
+                        
+                        # 檢查是否有月份資訊（月份查詢）
+                        if len(dt) > 7 and dt[5:7].isdigit():
+                            month = int(dt[5:7])
+                            quarter = (month - 1) // 3 + 1
+                        # 檢查是否為季度查詢
+                        elif 'Q' in processed_query:
+                            quarter_match = re.search(r'Q(\d)', processed_query)
+                            if quarter_match:
+                                quarter = int(quarter_match.group(1))
+                                # 季度查詢不需要月份
+                                month = None
+                except Exception as e:
+                    print(f"時間解析錯誤: {e}")
                     pass
         
         # 動態獲取維度資料
@@ -1374,30 +1443,43 @@ class AnalysisController:
                 if customer_exists:
                     # 客戶存在，生成針對該客戶的查詢
                     if year and month:
+                        # 支援月份查詢
                         return f'''
-                            SELECT c.customer_name, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                            SELECT c.customer_name, c.customer_level, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
                             FROM sales_fact f
                             JOIN dim_customer c ON f.customer_id = c.customer_id
                             JOIN dim_time t ON f.time_id = t.time_id
                             WHERE c.customer_name = '{customer}' AND t.year = {year} AND t.month = {month}
-                            GROUP BY c.customer_name
+                            GROUP BY c.customer_name, c.customer_level
                         '''
-                    else:
+                    elif year and quarter:
+                        # 支援季度查詢
+                        quarter_start_month = 3 * (quarter - 1) + 1
+                        quarter_end_month = 3 * quarter
                         return f'''
-                            SELECT c.customer_name, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                            SELECT c.customer_name, c.customer_level, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
                             FROM sales_fact f
                             JOIN dim_customer c ON f.customer_id = c.customer_id
-                            WHERE c.customer_name = '{customer}'
-                            GROUP BY c.customer_name
+                            JOIN dim_time t ON f.time_id = t.time_id
+                            WHERE c.customer_name = '{customer}' AND t.year = {year} AND t.month BETWEEN {quarter_start_month} AND {quarter_end_month}
+                            GROUP BY c.customer_name, c.customer_level
+                        '''
+                    else:
+                        # 無時間限制，查詢所有資料
+                        return f'''
+                            SELECT c.customer_name, c.customer_level, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                            FROM sales_fact f
+                            JOIN dim_customer c ON f.customer_id = c.customer_id
+                            GROUP BY c.customer_name, c.customer_level
                         '''
                 else:
                     # 客戶不存在，返回空結果查詢
                     return f'''
-                        SELECT c.customer_name, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                        SELECT c.customer_name, c.customer_level, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
                         FROM sales_fact f
                         JOIN dim_customer c ON f.customer_id = c.customer_id
                         WHERE c.customer_name = '{customer}'
-                        GROUP BY c.customer_name
+                        GROUP BY c.customer_name, c.customer_level
                     '''
         
         # 檢查是否包含特定業務員名稱
@@ -1405,21 +1487,34 @@ class AnalysisController:
             if staff in natural_query:
                 # 生成針對該業務員的查詢
                 if year and month:
+                    # 支援月份查詢
                     return f'''
-                        SELECT s.staff_name, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                        SELECT s.staff_name, s.department, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
                         FROM sales_fact f
                         JOIN dim_staff s ON f.staff_id = s.staff_id
                         JOIN dim_time t ON f.time_id = t.time_id
                         WHERE s.staff_name = '{staff}' AND t.year = {year} AND t.month = {month}
-                        GROUP BY s.staff_name
+                        GROUP BY s.staff_name, s.department
                     '''
-                else:
+                elif year and quarter:
+                    # 支援季度查詢
+                    quarter_start_month = 3 * (quarter - 1) + 1
+                    quarter_end_month = 3 * quarter
                     return f'''
-                        SELECT s.staff_name, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                        SELECT s.staff_name, s.department, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
                         FROM sales_fact f
                         JOIN dim_staff s ON f.staff_id = s.staff_id
-                        WHERE s.staff_name = '{staff}'
-                        GROUP BY s.staff_name
+                        JOIN dim_time t ON f.time_id = t.time_id
+                        WHERE s.staff_name = '{staff}' AND t.year = {year} AND t.month BETWEEN {quarter_start_month} AND {quarter_end_month}
+                        GROUP BY s.staff_name, s.department
+                    '''
+                else:
+                    # 無時間限制，查詢所有資料
+                    return f'''
+                        SELECT s.staff_name, s.department, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                        FROM sales_fact f
+                        JOIN dim_staff s ON f.staff_id = s.staff_id
+                        GROUP BY s.staff_name, s.department
                     '''
         
         # 檢查是否包含特定產品名稱
@@ -1427,21 +1522,34 @@ class AnalysisController:
             if product in natural_query:
                 # 生成針對該產品的查詢
                 if year and month:
+                    # 支援月份查詢
                     return f'''
-                        SELECT p.product_name, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                        SELECT p.product_name, p.category, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
                         FROM sales_fact f
                         JOIN dim_product p ON f.product_id = p.product_id
                         JOIN dim_time t ON f.time_id = t.time_id
                         WHERE p.product_name = '{product}' AND t.year = {year} AND t.month = {month}
-                        GROUP BY p.product_name
+                        GROUP BY p.product_name, p.category
                     '''
-                else:
+                elif year and quarter:
+                    # 支援季度查詢
+                    quarter_start_month = 3 * (quarter - 1) + 1
+                    quarter_end_month = 3 * quarter
                     return f'''
-                        SELECT p.product_name, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                        SELECT p.product_name, p.category, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
                         FROM sales_fact f
                         JOIN dim_product p ON f.product_id = p.product_id
-                        WHERE p.product_name = '{product}'
-                        GROUP BY p.product_name
+                        JOIN dim_time t ON f.time_id = t.time_id
+                        WHERE p.product_name = '{product}' AND t.year = {year} AND t.month BETWEEN {quarter_start_month} AND {quarter_end_month}
+                        GROUP BY p.product_name, p.category
+                    '''
+                else:
+                    # 無時間限制，查詢所有資料
+                    return f'''
+                        SELECT p.product_name, p.category, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                        FROM sales_fact f
+                        JOIN dim_product p ON f.product_id = p.product_id
+                        GROUP BY p.product_name, p.category
                     '''
         
         # 檢查是否包含特定地區名稱
@@ -1449,41 +1557,69 @@ class AnalysisController:
             if region in natural_query:
                 # 生成針對該地區的查詢
                 if year and month:
+                    # 支援月份查詢
                     return f'''
-                        SELECT r.region_name, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                        SELECT r.region_name, r.region_type, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
                         FROM sales_fact f
                         JOIN dim_region r ON f.region_id = r.region_id
                         JOIN dim_time t ON f.time_id = t.time_id
                         WHERE r.region_name = '{region}' AND t.year = {year} AND t.month = {month}
-                        GROUP BY r.region_name
+                        GROUP BY r.region_name, r.region_type
                     '''
-                else:
+                elif year and quarter:
+                    # 支援季度查詢
+                    quarter_start_month = 3 * (quarter - 1) + 1
+                    quarter_end_month = 3 * quarter
                     return f'''
-                        SELECT r.region_name, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                        SELECT r.region_name, r.region_type, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
                         FROM sales_fact f
                         JOIN dim_region r ON f.region_id = r.region_id
-                        WHERE r.region_name = '{region}'
-                        GROUP BY r.region_name
+                        JOIN dim_time t ON f.time_id = t.time_id
+                        WHERE r.region_name = '{region}' AND t.year = {year} AND t.month BETWEEN {quarter_start_month} AND {quarter_end_month}
+                        GROUP BY r.region_name, r.region_type
+                    '''
+                else:
+                    # 無時間限制，查詢所有資料
+                    return f'''
+                        SELECT r.region_name, r.region_type, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                        FROM sales_fact f
+                        JOIN dim_region r ON f.region_id = r.region_id
+                        GROUP BY r.region_name, r.region_type
                     '''
         
         # 新增對「統計各業務員銷售業績和數量」的查詢模式
         if natural_query.strip() == "統計各業務員銷售業績和數量":
             if year and month:
+                # 支援月份查詢
                 return f'''
-                    SELECT s.staff_name, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                    SELECT s.staff_name, s.department, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
                     FROM sales_fact f
                     JOIN dim_staff s ON f.staff_id = s.staff_id
                     JOIN dim_time t ON f.time_id = t.time_id
                     WHERE t.year = {year} AND t.month = {month}
-                    GROUP BY s.staff_name
+                    GROUP BY s.staff_name, s.department
+                    ORDER BY total_sales DESC
+                '''
+            elif year and quarter:
+                # 支援季度查詢
+                quarter_start_month = 3 * (quarter - 1) + 1
+                quarter_end_month = 3 * quarter
+                return f'''
+                    SELECT s.staff_name, s.department, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                    FROM sales_fact f
+                    JOIN dim_staff s ON f.staff_id = s.staff_id
+                    JOIN dim_time t ON f.time_id = t.time_id
+                    WHERE t.year = {year} AND t.month BETWEEN {quarter_start_month} AND {quarter_end_month}
+                    GROUP BY s.staff_name, s.department
                     ORDER BY total_sales DESC
                 '''
             else:
+                # 無時間限制，查詢所有資料
                 return '''
-                    SELECT s.staff_name, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
+                    SELECT s.staff_name, s.department, SUM(f.amount) as total_sales, SUM(f.quantity) as total_quantity
                     FROM sales_fact f
                     JOIN dim_staff s ON f.staff_id = s.staff_id
-                    GROUP BY s.staff_name
+                    GROUP BY s.staff_name, s.department
                     ORDER BY total_sales DESC
                 '''
         # 其餘維持原有邏輯
@@ -1585,6 +1721,80 @@ class AnalysisController:
                 WHERE t.year = {match.group(1)} AND t.month = {match.group(2)}
                 GROUP BY c.customer_name, t.date
                 ORDER BY c.customer_name, t.date
+            ''',
+            # 新增支援維度表內資料查詢的模式
+            r'(\d{4})年(\d{1,2})月.*客戶.*等級': lambda match: f'''
+                SELECT c.customer_name, c.customer_level, SUM(f.amount) as total_sales
+                FROM sales_fact f
+                JOIN dim_customer c ON f.customer_id = c.customer_id
+                JOIN dim_time t ON f.time_id = t.time_id
+                WHERE t.year = {match.group(1)} AND t.month = {match.group(2)}
+                GROUP BY c.customer_name, c.customer_level
+                ORDER BY total_sales DESC
+            ''',
+            r'(\d{4})年(\d{1,2})月.*業務員.*部門': lambda match: f'''
+                SELECT s.staff_name, s.department, SUM(f.amount) as total_sales
+                FROM sales_fact f
+                JOIN dim_staff s ON f.staff_id = s.staff_id
+                JOIN dim_time t ON f.time_id = t.time_id
+                WHERE t.year = {match.group(1)} AND t.month = {match.group(2)}
+                GROUP BY s.staff_name, s.department
+                ORDER BY total_sales DESC
+            ''',
+            r'(\d{4})年(\d{1,2})月.*產品.*類別': lambda match: f'''
+                SELECT p.product_name, p.category, SUM(f.amount) as total_sales
+                FROM sales_fact f
+                JOIN dim_product p ON f.product_id = p.product_id
+                JOIN dim_time t ON f.time_id = t.time_id
+                WHERE t.year = {match.group(1)} AND t.month = {match.group(2)}
+                GROUP BY p.product_name, p.category
+                ORDER BY total_sales DESC
+            ''',
+            r'(\d{4})年(\d{1,2})月.*地區.*類型': lambda match: f'''
+                SELECT r.region_name, r.region_type, SUM(f.amount) as total_sales
+                FROM sales_fact f
+                JOIN dim_region r ON f.region_id = r.region_id
+                JOIN dim_time t ON f.time_id = t.time_id
+                WHERE t.year = {match.group(1)} AND t.month = {match.group(2)}
+                GROUP BY r.region_name, r.region_type
+                ORDER BY total_sales DESC
+            ''',
+            # 支援季度查詢的模式
+            r'(\d{4})年Q(\d).*客戶.*等級': lambda match: f'''
+                SELECT c.customer_name, c.customer_level, SUM(f.amount) as total_sales
+                FROM sales_fact f
+                JOIN dim_customer c ON f.customer_id = c.customer_id
+                JOIN dim_time t ON f.time_id = t.time_id
+                WHERE t.year = {match.group(1)} AND t.quarter = {match.group(2)}
+                GROUP BY c.customer_name, c.customer_level
+                ORDER BY total_sales DESC
+            ''',
+            r'(\d{4})年Q(\d).*業務員.*部門': lambda match: f'''
+                SELECT s.staff_name, s.department, SUM(f.amount) as total_sales
+                FROM sales_fact f
+                JOIN dim_staff s ON f.staff_id = s.staff_id
+                JOIN dim_time t ON f.time_id = t.time_id
+                WHERE t.year = {match.group(1)} AND t.quarter = {match.group(2)}
+                GROUP BY s.staff_name, s.department
+                ORDER BY total_sales DESC
+            ''',
+            r'(\d{4})年Q(\d).*產品.*類別': lambda match: f'''
+                SELECT p.product_name, p.category, SUM(f.amount) as total_sales
+                FROM sales_fact f
+                JOIN dim_product p ON f.product_id = p.product_id
+                JOIN dim_time t ON f.time_id = t.time_id
+                WHERE t.year = {match.group(1)} AND t.quarter = {match.group(2)}
+                GROUP BY p.product_name, p.category
+                ORDER BY total_sales DESC
+            ''',
+            r'(\d{4})年Q(\d).*地區.*類型': lambda match: f'''
+                SELECT r.region_name, r.region_type, SUM(f.amount) as total_sales
+                FROM sales_fact f
+                JOIN dim_region r ON f.region_id = r.region_id
+                JOIN dim_time t ON f.time_id = t.time_id
+                WHERE t.year = {match.group(1)} AND t.quarter = {match.group(2)}
+                GROUP BY r.region_name, r.region_type
+                ORDER BY total_sales DESC
             '''
         }
         
@@ -3543,11 +3753,15 @@ class AnalysisController:
             # 構建語義查詢文字
             semantic_query = f"分析{period_text}期間的{dimension}維度表現"
             
-            # 添加時間範圍信息
-            current_start = parsed['current_start'].strftime('%Y-%m-%d')
-            current_end = parsed['current_end'].strftime('%Y-%m-%d')
-            last_start = parsed['last_start'].strftime('%Y-%m-%d')
-            last_end = parsed['last_end'].strftime('%Y-%m-%d')
+            # 添加時間範圍信息（檢查鍵是否存在）
+            try:
+                current_start = parsed['current_start'].strftime('%Y-%m-%d') if 'current_start' in parsed else "未知"
+                current_end = parsed['current_end'].strftime('%Y-%m-%d') if 'current_end' in parsed else "未知"
+                last_start = parsed['last_start'].strftime('%Y-%m-%d') if 'last_start' in parsed else "未知"
+                last_end = parsed['last_end'].strftime('%Y-%m-%d') if 'last_end' in parsed else "未知"
+            except Exception as e:
+                print(f"時間範圍解析錯誤: {e}")
+                current_start = current_end = last_start = last_end = "未知"
             
             semantic_query += f"，當前期間：{current_start}到{current_end}，比較期間：{last_start}到{last_end}"
             

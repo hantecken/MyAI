@@ -218,6 +218,7 @@ def register_forecast_routes(app, data_manager):
                             'total_forecast': forecast_result.get('total_forecast', 0),
                             'avg_forecast': forecast_result.get('avg_forecast', 0),
                             'forecast_data': forecast_result.get('forecast_data', []),
+                            'historical_data': forecast_result.get('historical_data', []),  # 添加歷史數據
                             'chart_filename': os.path.basename(chart_filename) if chart_filename else None,
                             'analysis_result': analysis_results['analysis_result'],
                             'summary_result': analysis_results['summary_result'],

@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>統一預測圖表 - NL2Cube 智慧分析系統</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        .chart-container {
+            position: relative;
+            height: 500px;
+            width: 100%;
+        }
+        
+        .forecast-card {
+            transition: transform 0.2s;
+        }
+        
+        .forecast-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .status-badge {
+            font-size: 0.8rem;
+        }
+        
+        .loading-spinner {
+            display: none;
+        }
+        
+        .result-section {
+            min-height: 200px;
+        }
+        
+        .chart-placeholder {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            color: #6c757d;
+        }
+        
+        .ai-analysis-report {
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 8px;
+            padding: 20px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .ai-analysis-report h1, .ai-analysis-report h2, .ai-analysis-report h3 {
+            color: #2c3e50;
+            font-weight: 600;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        
+        .ai-analysis-report h1 {
+            font-size: 24px;
+            border-bottom: 2px solid #28a745;
+            padding-bottom: 10px;
+        }
+        
+        .ai-analysis-report h2 {
+            font-size: 20px;
+            color: #34495e;
+        }
+        
+        .ai-analysis-report h3 {
+            font-size: 18px;
+            color: #7f8c8d;
+        }
+        
+        .ai-analysis-report p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        .ai-analysis-report strong {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <!-- 導航欄 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-chart-line me-2"></i>
+                統一預測圖表
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/"><i class="fas fa-home me-1"></i>首頁</a>
+                <a class="nav-link" href="/unified-forecast-simple"><i class="fas fa-flask me-1"></i>簡化測試</a>
+                <a class="nav-link" href="/debug-unified-forecast"><i class="fas fa-bug me-1"></i>問題診斷</a>
+                <a class="nav-link" href="#" onclick="testCrewAI()"><i class="fas fa-robot me-1"></i>智慧分析</a>
+                <a class="nav-link" href="/crewai/test-page"><i class="fas fa-vial me-1"></i>智慧分析測試</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- 頁面標題 -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <h1 class="mb-2">
+                            <i class="fas fa-chart-line me-3"></i>
+                            統一預測圖表系統
+                        </h1>
+                        <p class="mb-0 fs-5">結合業績預測細膩圖表 + AI 深度分析的智慧預測平台</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 預測控制面板 -->
+        <div class="row mb-4">
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            <i class="fas fa-cogs me-2"></i>
+                            預測參數設定
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">預測類型</label>
+                                <select id="forecastType" class="form-select">
+                                    <option value="month">月度預測</option>
+                                    <option value="quarter">季度預測</option>
+                                    <option value="year">年度預測</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">預測期數</label>
+                                <input type="number" id="periods" class="form-control" value="12" min="1" max="24">
+                                <div class="form-text">請輸入1-24之間的數字</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label fw-bold">AI 分析</label>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="enableAiAnalysis" checked>
+                                    <label class="form-check-label" for="enableAiAnalysis">啟用 AI 深度分析</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <button onclick="generateUnifiedForecast()" id="generateBtn" class="btn btn-warning btn-lg">
+                                <span id="btnText">
+                                    <i class="fas fa-chart-line me-2"></i>
+                                    生成統一預測
+                                </span>
+                                <span id="btnSpinner" class="spinner-border spinner-border-sm loading-spinner" role="status" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            系統特色
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>細膩圖表：</strong>使用 matplotlib 生成高品質靜態圖表
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>AI 分析：</strong>整合 Gemini API 進行深度業務分析
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>統一介面：</strong>單一 API 提供完整預測功能
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-check-circle text-success me-2"></i>
+                                <strong>數據一致性：</strong>統一的模型參數確保預測結果一致
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 預測結果區域 -->
+        <div id="result" class="result-section"></div>
+        
+        <!-- 圖表顯示區域 -->
+        <div id="chart" class="result-section">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-area me-2"></i>
+                        統一預測圖表
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-placeholder">
+                        <div class="text-center">
+                            <i class="fas fa-chart-line fa-3x mb-3 text-muted"></i>
+                            <h5 class="text-muted">請點擊上方按鈕生成預測圖表</h5>
+                            <p class="text-muted">系統將顯示歷史數據、預測趨勢和 AI 分析結果</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- AI 分析結果區域 -->
+        <div id="analysis" class="result-section"></div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // 生成統一預測的主要函數
+        async function generateUnifiedForecast() {
+            const btn = document.getElementById('generateBtn');
+            const btnText = document.getElementById('btnText');
+            const btnSpinner = document.getElementById('btnSpinner');
+            const resultDiv = document.getElementById('result');
+            const chartDiv = document.getElementById('chart');
+            const analysisDiv = document.getElementById('analysis');
+            
+            const type = document.getElementById('forecastType').value;
+            const periods = parseInt(document.getElementById('periods').value);
+            const enableAiAnalysis = document.getElementById('enableAiAnalysis').checked;
+            
+            // 驗證輸入
+            if (periods < 1 || periods > 24) {
+                resultDiv.innerHTML = '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>預測期數必須在1到24之間</div>';
+                return;
+            }
+            
+            // 更新按鈕狀態
+            btn.disabled = true;
+            btnText.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>生成中...';
+            btnSpinner.classList.remove('loading-spinner');
+            resultDiv.innerHTML = '<div class="alert alert-info"><i class="fas fa-info-circle me-2"></i>正在生成統一預測結果，請稍候...</div>';
+            chartDiv.innerHTML = '';
+            analysisDiv.innerHTML = '';
+            
+            try {
+                const response = await fetch('/api/unified-forecast', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        type: type,
+                        periods: periods,
+                        enable_ai_analysis: enableAiAnalysis
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // 顯示預測數據
+                    displayForecastResults(data);
+                    
+                    // 顯示圖表
+                    displayForecastChart(data);
+                    
+                    // 顯示 AI 分析
+                    displayAIAnalysis(data);
+                    
+                } else {
+                    resultDiv.innerHTML = `<div class="alert alert-danger">
+                        <h4 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>統一預測失敗</h4>
+                        <p>${data.error}</p>
+                    </div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="alert alert-danger">
+                    <h4 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>系統錯誤</h4>
+                    <p>無法連接到伺服器或處理過程中發生錯誤。</p>
+                    <hr>
+                    <p class="mb-0">詳細錯誤：${error.message}</p>
+                </div>`;
+            } finally {
+                // 恢復按鈕狀態
+                btn.disabled = false;
+                btnText.innerHTML = '<i class="fas fa-chart-line me-2"></i>生成統一預測';
+                btnSpinner.classList.add('loading-spinner');
+            }
+        }
+        
+        // 顯示預測結果
+        function displayForecastResults(data) {
+            const resultDiv = document.getElementById('result');
+            
+            let html = '<div class="row">';
+            
+            // 左側：預測數據
+            html += '<div class="col-lg-6">';
+            html += '<div class="card mb-3 forecast-card">';
+            html += '<div class="card-header bg-success text-white">';
+            html += '<h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>預測結果</h5>';
+            html += '</div><div class="card-body">';
+            html += `<p><strong>總預測銷售額：</strong>NT$ ${data.total_forecast.toLocaleString()}</p>`;
+            html += `<p><strong>平均月銷售額：</strong>NT$ ${data.avg_forecast.toLocaleString()}</p>`;
+            html += `<p><strong>預測期數：</strong>${data.periods} ${data.forecast_type}</p>`;
+            html += `<p><strong>預測範圍：</strong>${data.forecast_range}</p>`;
+            html += '</div></div>';
+            
+            html += '<div class="card forecast-card">';
+            html += '<div class="card-header bg-info text-white">';
+            html += '<h5 class="mb-0"><i class="fas fa-table me-2"></i>詳細預測數據</h5>';
+            html += '</div><div class="card-body">';
+            html += '<div class="table-responsive">';
+            html += '<table class="table table-striped table-hover">';
+            html += '<thead class="table-light"><tr><th>期間</th><th class="text-end">預測銷售額</th></tr></thead>';
+            html += '<tbody>';
+            data.forecast_data.forEach(item => {
+                html += `<tr><td>${item.period}</td><td class="text-end">NT$ ${item.forecast_sales.toLocaleString()}</td></tr>`;
+            });
+            html += '</tbody></table></div></div></div>';
+            html += '</div>';
+            
+            // 右側：模型資訊
+            html += '<div class="col-lg-6">';
+            html += '<div class="card mb-3 forecast-card">';
+            html += '<div class="card-header bg-warning text-white">';
+            html += '<h5 class="mb-0"><i class="fas fa-cogs me-2"></i>模型資訊</h5>';
+            html += '</div><div class="card-body">';
+            html += `<p><strong>模型類型：</strong>${data.model_info.model_type}</p>`;
+            html += `<p><strong>訓練期間：</strong>${data.model_info.training_period.start} - ${data.model_info.training_period.end}</p>`;
+            html += `<p><strong>參數：</strong>ARIMA(${data.model_info.parameters.order.join(',')}) × SARIMA(${data.model_info.parameters.seasonal_order.join(',')})</p>`;
+            html += `<p><strong>AIC：</strong>${data.model_info.model_summary.aic.toFixed(2)}</p>`;
+            html += `<p><strong>BIC：</strong>${data.model_info.model_summary.bic.toFixed(2)}</p>`;
+            html += '</div></div>';
+            
+            // 歷史數據統計
+            if (data.historical_data && data.historical_data.stats) {
+                const stats = data.historical_data.stats;
+                html += '<div class="card forecast-card">';
+                html += '<div class="card-header bg-secondary text-white">';
+                html += '<h5 class="mb-0"><i class="fas fa-history me-2"></i>歷史數據統計</h5>';
+                html += '</div><div class="card-body">';
+                html += `<p><strong>數據點數：</strong>${stats.data_points} 個月</p>`;
+                html += `<p><strong>總歷史銷售：</strong>NT$ ${stats.total_sales.toLocaleString()}</p>`;
+                html += `<p><strong>平均月銷售：</strong>NT$ ${stats.avg_monthly_sales.toLocaleString()}</p>`;
+                html += `<p><strong>銷售標準差：</strong>NT$ ${stats.sales_std.toLocaleString()}</p>`;
+                html += '</div></div>';
+            }
+            html += '</div>';
+            
+            html += '</div>';
+            resultDiv.innerHTML = html;
+        }
+        
+        // 顯示預測圖表
+        function displayForecastChart(data) {
+            const chartDiv = document.getElementById('chart');
+            
+            chartDiv.innerHTML = `
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-area me-2"></i>
+                            統一預測圖表
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="forecastChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 生成專業預測圖表
+            setTimeout(() => {
+                generateUnifiedForecastChart(data);
+            }, 100);
+        }
+        
+        // 顯示 AI 分析
+        function displayAIAnalysis(data) {
+            const analysisDiv = document.getElementById('analysis');
+            
+            if (data.ai_analysis && data.ai_analysis.success) {
+                analysisDiv.innerHTML = `
+                    <div class="card">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-robot me-2"></i>
+                                AI 深度分析報告
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="ai-analysis-report" style="white-space: pre-wrap; font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; font-size: 16px; line-height: 1.8; color: #2c3e50;">
+                                ${data.ai_analysis.analysis}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (data.ai_analysis) {
+                analysisDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        AI 分析未執行：${data.ai_analysis.message || data.ai_analysis.error}
+                    </div>
+                `;
+            }
+        }
+        
+        // 生成統一預測圖表的函數
+        function generateUnifiedForecastChart(data) {
+            try {
+                console.log('開始生成統一預測圖表...');
+                
+                // 檢查Chart.js是否可用
+                if (typeof Chart === 'undefined') {
+                    console.error('Chart.js 未載入');
+                    return;
+                }
+                
+                const canvas = document.getElementById('forecastChart');
+                if (!canvas) {
+                    console.error('找不到預測圖表canvas元素');
+                    return;
+                }
+                
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    console.error('無法獲取canvas上下文');
+                    return;
+                }
+                
+                // 銷毀現有圖表
+                if (window.forecastChart && typeof window.forecastChart.destroy === 'function') {
+                    window.forecastChart.destroy();
+                }
+                
+                // 準備歷史數據 - 確保至少顯示2年歷史資料
+                const historicalLabels = [];
+                const historicalData = [];
+                if (data.historical_data && data.historical_data.dates && data.historical_data.data) {
+                    // 使用後端返回的歷史數據格式
+                    const dates = data.historical_data.dates;
+                    const sales = data.historical_data.data;
+                    
+                    // 確保數據對應
+                    for (let i = 0; i < Math.min(dates.length, sales.length); i++) {
+                        historicalLabels.push(dates[i]);
+                        historicalData.push(sales[i]);
+                    }
+                    
+                    console.log(`📊 載入歷史資料：${historicalData.length} 筆，期間：${historicalLabels[0]} 至 ${historicalLabels[historicalLabels.length - 1]}`);
+                }
+                
+                // 準備預測數據
+                const forecastLabels = [];
+                const forecastData = [];
+                if (data.forecast_data && data.forecast_data.length > 0) {
+                    data.forecast_data.forEach(item => {
+                        forecastLabels.push(item.period);
+                        forecastData.push(item.forecast_sales);
+                    });
+                }
+                
+                // 合併標籤
+                const allLabels = [...historicalLabels, ...forecastLabels];
+                
+                // 創建專業的數據集
+                const datasets = [];
+                
+                // 歷史數據集 - 使用深藍色線條，包含到前月的歷史資料
+                if (historicalData.length > 0) {
+                    datasets.push({
+                        label: '📊 歷史業績 (至前月)',
+                        data: historicalData,
+                        borderColor: '#1e3a8a', // 深藍色
+                        backgroundColor: 'rgba(30, 58, 138, 0.1)',
+                        borderWidth: 3,
+                        fill: false,
+                        tension: 0.2,
+                        pointRadius: 6,
+                        pointHoverRadius: 10,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#1e3a8a',
+                        pointBorderWidth: 2,
+                        pointStyle: 'circle'
+                    });
+                }
+                
+                // 預測數據集 - 需要接續在歷史數據之後
+                if (forecastData.length > 0) {
+                    // 創建完整的數據陣列，包含歷史數據的 null 值和預測數據
+                    const fullForecastData = [];
+                    
+                    // 在歷史數據位置填入 null，讓預測線從歷史數據結尾開始
+                    for (let i = 0; i < historicalData.length; i++) {
+                        fullForecastData.push(null);
+                    }
+                    
+                    // 添加預測數據
+                    fullForecastData.push(...forecastData);
+                    
+                    datasets.push({
+                        label: '🔮 預測趨勢',
+                        data: fullForecastData,
+                        borderColor: '#2ca02c',
+                        backgroundColor: 'rgba(44, 160, 44, 0.15)',
+                        borderWidth: 4,
+                        fill: false,
+                        tension: 0.3,
+                        pointRadius: 8,
+                        pointHoverRadius: 12,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#2ca02c',
+                        pointBorderWidth: 3,
+                        borderDash: [10, 5],
+                        spanGaps: true  // 允許跨越 null 值
+                    });
+                }
+                
+                // 創建專業圖表
+                window.forecastChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: allLabels,
+                        datasets: datasets
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `📈 ${data.forecast_type || '業績'} 預測趨勢分析 (含歷史資料)`,
+                                font: {
+                                    size: 18,
+                                    weight: 'bold'
+                                },
+                                color: '#2c3e50',
+                                padding: 20
+                            },
+                            subtitle: {
+                                display: true,
+                                text: '深藍色線條：歷史業績數據 (至前月) | 綠色虛線：AI預測趨勢 (當月起)',
+                                font: {
+                                    size: 14
+                                },
+                                color: '#7f8c8d',
+                                padding: 10
+                            },
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 20,
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: '時間期間',
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    color: '#E0E0E0',
+                                    lineWidth: 1
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: '銷售額 (NT$)',
+                                    font: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    }
+                                },
+                                grid: {
+                                    color: '#E0E0E0',
+                                    lineWidth: 1
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return 'NT$ ' + value.toLocaleString();
+                                    }
+                                }
+                            }
+                        },
+                        elements: {
+                            point: {
+                                hoverBackgroundColor: '#ffffff',
+                                hoverBorderWidth: 3
+                            }
+                        }
+                    }
+                });
+                
+                console.log('統一預測圖表生成完成');
+                
+            } catch (error) {
+                console.error('生成圖表時發生錯誤:', error);
+                const chartDiv = document.getElementById('chart');
+                chartDiv.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        圖表生成失敗：${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // 輸入驗證
+        document.getElementById('periods').addEventListener('input', function(e) {
+            const value = parseInt(e.target.value);
+            if (value < 1) e.target.value = 1;
+            if (value > 24) e.target.value = 24;
+        });
+        
+        // 頁面載入完成後的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('統一預測圖表頁面載入完成');
+            
+            // 檢查關鍵組件
+            console.log('Chart.js 狀態:', typeof Chart !== 'undefined' ? '已載入' : '未載入');
+            console.log('Bootstrap 狀態:', typeof bootstrap !== 'undefined' ? '已載入' : '未載入');
+            
+            // 檢查 DOM 元素
+            const elements = ['forecastType', 'periods', 'enableAiAnalysis', 'generateBtn'];
+            elements.forEach(id => {
+                const element = document.getElementById(id);
+                console.log(`元素 ${id}:`, element ? '存在' : '不存在');
+            });
+            
+            // 顯示頁面狀態
+            showPageStatus();
+        });
+        
+        // 顯示頁面狀態
+        function showPageStatus() {
+            const statusDiv = document.createElement('div');
+            statusDiv.className = 'alert alert-info alert-dismissible fade show';
+            statusDiv.innerHTML = `
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>頁面狀態檢查：</strong>
+                <ul class="mb-0 mt-2">
+                    <li>Chart.js: ${typeof Chart !== 'undefined' ? '✅ 已載入' : '❌ 未載入'}</li>
+                    <li>Bootstrap: ${typeof bootstrap !== 'undefined' ? '✅ 已載入' : '❌ 未載入'}</li>
+                    <li>DOM 元素: ${checkDOMElements()}</li>
+                    <li>智慧分析: <a href="#" onclick="testCrewAI(); return false;" class="text-decoration-none">點擊測試</a></li>
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            // 插入到頁面頂部
+            const container = document.querySelector('.container');
+            container.insertBefore(statusDiv, container.firstChild);
+        }
+        
+        // 檢查 DOM 元素
+        function checkDOMElements() {
+            const elements = ['forecastType', 'periods', 'enableAiAnalysis', 'generateBtn'];
+            const existing = elements.filter(id => document.getElementById(id)).length;
+            return `${existing}/${elements.length} 元素存在`;
+        }
+        
+        // 智慧分析測試功能
+        async function testCrewAI() {
+            try {
+                console.log('🤖 開始測試 CrewAI 智慧分析功能...');
+                
+                // 顯示載入狀態
+                const statusDiv = document.createElement('div');
+                statusDiv.id = 'crewai-status';
+                statusDiv.className = 'alert alert-info';
+                statusDiv.innerHTML = `
+                    <i class="fas fa-robot me-2"></i>
+                    <strong>正在測試 CrewAI 智慧分析功能...</strong>
+                    <div class="spinner-border spinner-border-sm ms-2" role="status"></div>
+                `;
+                
+                // 插入到頁面頂部
+                const container = document.querySelector('.container');
+                container.insertBefore(statusDiv, container.firstChild);
+                
+                // 測試 CrewAI 狀態
+                const statusResponse = await fetch('/crewai/status');
+                const statusData = await statusResponse.json();
+                
+                if (statusData.available) {
+                    // 執行智慧預測
+                    const forecastResponse = await fetch('/crewai/forecast', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ periods: 12 })
+                    });
+                    
+                    const forecastData = await forecastResponse.json();
+                    
+                    if (forecastData.success) {
+                        statusDiv.className = 'alert alert-success';
+                        statusDiv.innerHTML = `
+                            <i class="fas fa-check-circle me-2"></i>
+                            <strong>CrewAI 智慧分析測試成功！</strong>
+                            <br><small>預測期數：${forecastData.periods}，時間戳記：${forecastData.timestamp}</small>
+                            <button type="button" class="btn-close ms-2" onclick="this.parentElement.remove()"></button>
+                        `;
+                        
+                        console.log('✅ CrewAI 智慧分析測試成功:', forecastData);
+                    } else {
+                        throw new Error(forecastData.error);
+                    }
+                } else {
+                    throw new Error('CrewAI 功能未啟用');
+                }
+                
+            } catch (error) {
+                console.error('❌ CrewAI 智慧分析測試失敗:', error);
+                
+                const statusDiv = document.getElementById('crewai-status');
+                if (statusDiv) {
+                    statusDiv.className = 'alert alert-warning';
+                    statusDiv.innerHTML = `
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>CrewAI 智慧分析測試失敗</strong>
+                        <br><small>錯誤：${error.message}</small>
+                        <button type="button" class="btn-close ms-2" onclick="this.parentElement.remove()"></button>
+                    `;
+                }
+            }
+        }
+    </script>
+</body>
+</html>

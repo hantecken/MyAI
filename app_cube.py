@@ -57,7 +57,7 @@ if __name__ == '__main__':
         start_scheduler_thread()
     
     print("應用程式已啟動，請訪問:")
-    print("  - 統一預測系統: http://127.0.0.1:5010/unified-forecast-test")
+    print("  - 統一預測系統: http://127.0.0.1:5010/unified-forecast")
     print("  - 預測Agent系統: http://127.0.0.1:5010/forecast-agent-test")
     print("  - 原始預測系統: http://127.0.0.1:5010/forecast-test")
     app.run(debug=True, host='127.0.0.1', port=5010)  # 使用 localhost
